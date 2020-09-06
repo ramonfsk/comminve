@@ -6,13 +6,18 @@ import { useNavigation } from '@react-navigation/native';
 
 interface PageHeaderProps {
   title: string;
+  defaultBack: boolean;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ title }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ title, defaultBack=true }) => {
   const { navigate } = useNavigation();
 
   function handleGoBack() {
-    navigate('Home');
+    if (defaultBack) {
+      navigate('Home');
+    } else {
+      navigate('Contracts');
+    }
   }
 
   return (
@@ -31,6 +36,7 @@ export default PageHeader;
 
 const styles = StyleSheet.create({ 
   container: {
+    //flex: 1,
     paddingVertical: 30,
     paddingHorizontal: 16,
     backgroundColor: '#8257e5',

@@ -105,7 +105,7 @@ const FormAddMachine = () => {
 
   return (
     <>
-      <PageHeader title='Registro de Máquina' />
+      <PageHeader title='Registro de Máquina' defaultBack={true} />
 
       <View style={styles.form}>
         <View style={styles.inputGroup}>
@@ -141,10 +141,10 @@ const FormAddMachine = () => {
             unit: 'R$ ',
             suffixUnit: ''
           }}
-          placeholder='R$ 100,00'
+          placeholder='R$ 99,99'
           value={String(cashValue)}
           onChangeText={(_, rawValue) => setCashValue(String(rawValue))}
-          keyboardType='numeric'
+          keyboardType='number-pad'
         />
 
         <TextInputMask
@@ -153,7 +153,7 @@ const FormAddMachine = () => {
           placeholder='100'
           value={String(giftsQuantity)}
           onChangeText={(value) => setGiftsQuantity(value)}
-          keyboardType='numeric'
+          keyboardType='number-pad'
         />
 
         <RectButton 

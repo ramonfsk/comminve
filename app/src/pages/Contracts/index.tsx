@@ -1,61 +1,96 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, FlatList } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import { RectButton } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 
+import storage from '../../database/offline/';
+
 import PageHeader from '../../components/PageHeader';
 
-const STRGK_CONTRACTS = '@comminve#contracts';
+interface Params {
+  machine: Machine;
+  contracts: Contract[];
+}
 
-const data = [
-  {
-    idContract: 1,
-    isActive: false,
-    typeContract: 0,
-    idMachine: 1,
-    placeName: 'padaria',
-    address: 'QR BBBB',
-    cep: '111',
-    locatorName: 'Ramon',
-    cpf: '000999999-22',
-    signatureB64: 'ASDCW2',
-    percentage: 0,
-    rentValue: 10,
-  },
-  {
-    idContract: 2,
-    isActive: true,
-    typeContract: 1,
-    idMachine: 1,
-    placeName: 'padaria',
-    address: 'QR BBBB',
-    cep: '111',
-    locatorName: 'Edvaldo',
-    cpf: '000999999-22',
-    signatureB64: 'ASDCW2',
-    percentage: 0,
-    rentValue: 10,
+interface Machine {
+  idMachine: number,
+  isActive: boolean,
+  cashValue: number,
+  giftsQuantity: number
+}
+
+interface Contract {
+  idContract: number,
+  isActive: boolean,
+  typeContract: boolean,
+  dateSign: string,
+  idMachine: number,
+  placeName: string,
+  address: string,
+  cep: string,
+  locatorName: string,
+  cpf: string,
+  signatureB64: string,
+  percentage: number,
+  rentValue: number,
+}
+
+const Contracts = () => {
+  const [contracts, setContracts] = useState<Contract[]>([]);
+
+  const isFocus = useIsFocused();
+  
+  const navigation = useNavigation();
+
+  const route = useRoute();
+  const routeParams = route.params as Params;
+  if (
+    typeof(routeParams.contracts) !== 'undefined'
+    // || routeParams.contracts.length > 0
+    && JSON.stringify(routeParams.contracts) !== JSON.stringify(contracts)
+  ) {
+    setContracts(routeParams.contracts);
   }
-];
 
-const Contract = () => {
+  const STRGK_CONTRACTS = `@comminve#machine${routeParams.machine.idMachine}_contracts`;
 
-  function handleNavigateToContractDetailsPage() {
-
+  function handleNavigateToContractDetailsPage(contract: Contract) {
+    navigation.navigate('DetailsContract', { 
+      contract: contract,
+    });
   }
 
   function handleNavigateToAddNewContractPage() {
-
+    navigation.navigate('FormAddContract', { machine: routeParams.machine });
   }
 
-  async function _load() {
-
+  function _sortContracts(data) {
+    if (data.length > 0) {
+      const cntrts = data;
+      cntrts.sort((a: Contract, b: Contract) => { return (b.idContract - a.idContract) });
+      setContracts(cntrts);
+    }
   }
 
-  useFocusEffect(() => {
+  function _loadData() {
+    storage.get(STRGK_CONTRACTS)
+    .then(data => {
+      if (!data) {
+        console.log(`There are no persistent Contracts data in AsyncStorage!`);
+      } else {
+        setContracts(data);
+        console.log(`loadData(Contract)`);
+        // _sortContracts(data);
+      }
+    })
+  .catch(err => console.log(`Error to restore contracts from AsyncStorage.\n${err}`));
+  }
 
-  });
+  useEffect(() => {
+    // console.log(`params: ${JSON.stringify(routeParams)}`);
+    _loadData();
+  }, [isFocus]);
 
   const Item = ({ item, onPress, style }) => (
     <RectButton
@@ -73,7 +108,7 @@ const Contract = () => {
     return (
       <Item 
         item={item}
-        onPress={() => handleNavigateToContractDetailsPage() }
+        onPress={() => handleNavigateToContractDetailsPage(item)}
         style={item.isActive ? styles.itemActive : styles.item}
       />
     );
@@ -81,25 +116,26 @@ const Contract = () => {
 
   return (
     <>
-      <PageHeader title="Contratos" />
+      {/* {storage.delete(STRGK_CONTRACTS)} */}
+      <PageHeader title="Contratos" defaultBack={true} />
 
       <View style={styles.container}>
         <Text style={styles.title}>Lista de Contratos</Text>
 
         <View style={styles.listItens}>
           <FlatList
-            data={data}
-            extraData={data}
+            data={contracts}
+            extraData={contracts}
             renderItem={renderItem}
-            keyExtractor={(item) => item.idContract.toString()}
+            keyExtractor={(item: Contract) => item.idContract.toString()}
             refreshing={false}
-            onRefresh={_load}
+            onRefresh={_loadData}
           />
         </View>
 
         <View style={styles.buttonGroup}>
           <RectButton
-            onPress={() => {}}
+            onPress={handleNavigateToAddNewContractPage}
             style={styles.buttonAdd}
           >
             <Text style={styles.buttonText}>
@@ -116,7 +152,7 @@ const Contract = () => {
   );
 }
 
-export default Contract;
+export default Contracts;
 
 const styles = StyleSheet.create({
   container: {

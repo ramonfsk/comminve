@@ -4,21 +4,18 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 
 import MachineDetails from '../pages/MachineDetails';
-import Historic from '../pages/Contract';
+import Contracts from '../pages/Contracts';
 import CashWithdrawal from '../pages/Readings';
 
-interface Machine {
-  machineNumber: number,
-  isActive: boolean,
-  cashValue: number,
-  giftsQuantity: number
+interface Params {
+  machine: object;
 }
 
 const { Navigator, Screen } = createBottomTabNavigator();
 
 const MachineTabs = () => {
   const route = useRoute();
-  const routeParams = route.params?.machine as Machine;
+  const routeParams = route.params as Params;
 
   return (
     <Navigator
@@ -62,11 +59,11 @@ const MachineTabs = () => {
             );
           }
         }}
-        initialParams={routeParams}
+        initialParams={routeParams.machine}
       />
       <Screen 
-        name="Contract" 
-        component={Historic}
+        name="Contracts" 
+        component={Contracts}
         options={{
           tabBarLabel: 'Contrato',
           tabBarIcon: ({ color, size }) => {
@@ -88,7 +85,7 @@ const MachineTabs = () => {
             );
           }
         }}
-        initialParams={routeParams}
+        initialParams={routeParams.machine}
       />
     </Navigator>
   );

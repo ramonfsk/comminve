@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text ,Image, FlatList } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import { RectButton } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
+
 import storage from '../../database/offline/';
 
 import logo from '../../assets/imgs/logo6.png';
 
 const STRGK_MACHINES = '@comminve#machines';
-const STRGK_CASH = '@comminve#totalCash'
 
 interface Machine {
   idMachine: number,
@@ -19,8 +19,12 @@ interface Machine {
 
 const Home = () => {
   const [machines, setMachines] = useState<Machine[]>([]);
+
+  const [liquidCash, setLiquidCash] = useState(0);
   const [partialCash, setPartialCash] = useState(0);
   const [totalCash, setTotalCash] = useState(0);
+  
+  const isFocus = useIsFocused();
   // navigation
   const navigation = useNavigation();
   // check params
@@ -63,6 +67,7 @@ const Home = () => {
       setTotalCash(sumTotalCash);
       const partial = sumTotalCash * 0.2;
       setPartialCash(partial);
+      setLiquidCash(totalCash - partial);
     }
   }
 
@@ -83,7 +88,7 @@ const Home = () => {
 
   useEffect(() => {
     _loadData();
-  }, []);
+  }, [isFocus]);
   
   const renderItem = ({ item }) => {
     return (
@@ -110,9 +115,9 @@ const Home = () => {
       <View style={styles.listItens}>
         <FlatList
           data={machines}
-          extraData={totalCash}
+          extraData={machines}
           renderItem={renderItem}
-          keyExtractor={(item) => item.idMachine.toString()}
+          keyExtractor={(item: Machine) => item.idMachine.toString()}
           refreshing={false}
           onRefresh={_loadData}
         />
@@ -131,6 +136,9 @@ const Home = () => {
           {`PARCIAL R$ ${partialCash.toFixed(2)}`}
         </Text>
         <Text style={styles.cashItemText}>
+          {`LÍQUIDO R$ ${liquidCash.toFixed(2)}`}
+        </Text>
+        <Text style={styles.cashItemText}>
           {`TOTAL R$ ${totalCash.toFixed(2)}`}
         </Text>
       </View>
@@ -143,7 +151,7 @@ export default Home;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#fff',
   },
@@ -159,10 +167,11 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   listItens: {
-    flex: 1,
+    flex: .70,
     width: '90%',
+    //height: '30%',
     paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: '#C9C9CB',
     borderRadius: 8,
@@ -206,15 +215,15 @@ const styles = StyleSheet.create({
     color: '#fff'
   },
   cashItem: {
-    flex: 0.15,
+    flex: 0.16,
     width: '100%',
     height: 44,
-    marginBottom: 10,
+    marginBottom: 39,
     //borderTopWidth: 2.6,
     //borderColor: '#000',
   },
   cashItemText: {
-    fontSize: 38,
+    fontSize: 36,
     fontWeight: '700',
     textAlign: 'center',
     color: '#23B575'

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Alert } from 'react-native';
 import PageHeader from '../../components/PageHeader';
-import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { useRoute, useIsFocused } from '@react-navigation/native';
 import { RectButton } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -16,34 +16,82 @@ interface Machine {
   giftsQuantity: number
 }
 
+interface Allocation {
+  typeContract: boolean,
+  value: string,
+}
+
 const MachineDetails = () => {
   const [machine, setMachine] = useState<Machine>();
   const [machines, setMachines] = useState<Machine[]>();
+  const [allocation, setAllocation] = useState<Allocation>();
+  const [valueAllocation, setValueAllocation] = useState(0);
+  
+  const isFocus = useIsFocused();
 
   const route = useRoute();
   const routeParams = route.params as Machine;
+  console.log(`params: ${routeParams}`);
+  const STRGK_ALOCATIONS = `@comminve#machine${routeParams.idMachine}_allocations`;
 
   function _handleToggleStatusMachine() {
-    Alert.alert(`Função ainda não disponível!`);
+    alert(`Função ainda não disponível!`);
   }
 
   function _loadData() {
     storage.get(STRGK_MACHINES)
-    .then((machines: Machine[]) => {
-      setMachines(machines);
-      console.log(`loadData(MachineDetails)`);
-    })
-    .catch((err: Error) => console.log(`Error to restore machines from AsyncStorage.\n${err}`));
+      .then(data => {
+        if (!data) {
+          console.log(`There are no persistent Machines data in AsyncStorage!`);
+        } else {
+          setMachines(data);
+          console.log(`loadData(MachineDetails)`);
+          if (!machines) {
+            setMachine(routeParams);
+          } else {
+            const machine = machines.find(machine => machine.idMachine === Number(routeParams.idMachine));
+            setMachine(machine);
+          }
+        }
+      })
+    .catch(err => console.log(`Error to restore machines from AsyncStorage.\n${err}`));
+    _loadAllocation();
   }
 
-  useFocusEffect(() => {
-    setMachine(routeParams);
-  });
+  function _loadAllocation() {
+    storage.get(STRGK_ALOCATIONS)
+    .then(alloc => {
+      if (!alloc) {
+        console.log(`There are no persistent Allocation Values data in AsyncStorage!`);
+      } else { 
+        setAllocation(alloc);
+        //console.log(`values: ${JSON.stringify(data)}`);
+        console.log(`loadData(AllocationValues)!`);
+        _calcAllocationValue();
+      }
+    })
+  .catch(err => console.log(`Error to restore allocation value from AsyncStorage.\n${err}`));
+  }
+
+  function _calcAllocationValue() {
+    if (!allocation.typeContract) {
+      const percentual = Number(allocation.value.replace('%', ''));
+      setValueAllocation((percentual / 100) * machine.cashValue);
+    } else {
+      setValueAllocation(Number(allocation.value));
+    }
+  }
+
+  useEffect(() => {
+    _loadData();
+  }, [!isFocus]);
 
 
   return (
     <>
-      <PageHeader title="Detalhes" />
+     {/* {storage.delete(STRGK_ALOCATIONS)} */}
+    {/* {_loadData()} */}
+      <PageHeader title="Detalhes" defaultBack={true} />
 
       <View style={styles.container}>
         <Text style={styles.title}>
@@ -54,8 +102,9 @@ const MachineDetails = () => {
           machine?.isActive ?
           `Ativa` : `Desativada`
         }</Text>
-        <Text style={styles.detailsText}>{`Dinheiro em caixa: ${machine?.cashValue}`}</Text>
+        <Text style={styles.detailsText}>{`Dinheiro em caixa: R$ ${machine?.cashValue.toFixed(2)}`}</Text>
         <Text style={styles.detailsText}>{`Quantidade de presentes: ${machine?.giftsQuantity}`}</Text>
+        <Text style={styles.detailsText}>{`Custo de alocação: R$ ${allocation ? valueAllocation.toFixed(2) : 0}`}</Text>
 
         <View style={styles.buttons}>
           <RectButton
@@ -106,7 +155,7 @@ const styles = StyleSheet.create({
     marginBottom: 46,
   },
   detailsText: {
-    fontFamily: 'Archivo_400Regular',
+    // fontFamily: 'Archivo_400Regular',
     fontSize: 24,
     textAlign: 'center',
     marginBottom: 26

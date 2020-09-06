@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, FlatList } from 'react-native';
 import { RectButton, TextInput } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TextInputMask } from 'react-native-masked-text';
-import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 import storage from '../../database/offline/';
 
@@ -24,16 +24,20 @@ interface Reading {
   idMachine: number,
   initialDate: string,
   finalDate: string,
-  value: number
+  value: number,
+  giftsQuantity: number
 }
 
 const Readings = () => {
   const [initialDate, setInitialDate] = useState('');
   const [finalDate, setFinalDate] = useState('');
   const [valueReading, setValueReading] = useState('');
+  const [giftsQuantity, setGiftsQuantity] = useState('');
+
   const [readings, setReadings] = useState<Reading[]>([]);
-  // machines
   const [machines, setMachines] = useState<Machine[]>([]);
+
+  const isFocus = useIsFocused();
 
   const route = useRoute();
   const routeParams = route.params as Machine;
@@ -75,6 +79,7 @@ const Readings = () => {
     let machinesSwap = machines;
     const index = machinesSwap.findIndex(machine => machine.idMachine === Number(routeParams.idMachine));
     let machine: Machine = machinesSwap[index];
+    machine.giftsQuantity = data.giftsQuantity;
     if (data.typeReading == 0) {
       machine.cashValue -= data.value;
     } else {
@@ -83,18 +88,13 @@ const Readings = () => {
       
     machinesSwap.splice(index, 1, machine);
     setMachines(machinesSwap);
-    storage.delete(STRGK_MACHINES)
-      .then(() => {
-        machines.map((machine) => {
-          storage.push(STRGK_MACHINES, machine)
-          .catch(err => console.log(`Failed to save machines data!\nDetails: ${err}`));
-        })
-      })
-    .catch(err => console.log(`Failed to remove machines data!\nDetails: ${err}`));
+    console.log(`subsSave: ${JSON.stringify(machines)}`);
+    storage.save(STRGK_MACHINES, machines)
+    .catch(err => console.log(`Failed to save machines data!\nDetails: ${err}`));
   }
   
   function handleAddAndSaveEntry(lastIdReading: number, typeReading: number) {
-    if (!initialDate || !finalDate || !valueReading) {
+    if (!initialDate || !finalDate || !valueReading || !giftsQuantity) {
       alert(`Registro de leitura inválido, revise os campos!`);
     } else {
       const iDate = new Date(initialDate);
@@ -112,7 +112,8 @@ const Readings = () => {
           idMachine: routeParams.idMachine,
           initialDate: initialDate,
           finalDate: finalDate,
-          value: Number(valueReading)
+          value: Number(valueReading),
+          giftsQuantity: Number(giftsQuantity)
         }
         readingsSwap.push(reading);
         _updateSortReadings(readingsSwap);
@@ -144,14 +145,17 @@ const Readings = () => {
 
   useEffect(() => {
     _loadData();
-  }, []);
+  }, [isFocus]);
 
   const renderItem = ({ item }) => {
     return (
-      <View style={styles.item}>
+      <View style={item.typeReading === 0 
+        ? [styles.item, { backgroundColor: '#E33D3D' }]
+        : [styles.item, { backgroundColor: '#04D361' }]
+      }>
         <Text style={styles.itemText}>{`Data: ${item.initialDate} à ${item.finalDate}`}</Text>
         <Text style={styles.itemText}>{`Valor: R$ ${item.value}`}</Text>
-        <Text style={styles.itemText}>{`Tipo: ${item.typeReading === 0 ? 'Retirada' : 'Entrada'}`}</Text>
+        <Text style={styles.itemText}>{`Qtd: ${item.giftsQuantity}`}</Text>
       </View>
     );
   };
@@ -159,7 +163,7 @@ const Readings = () => {
   return (
     <>
       {/* {storage.delete(STRGK_READINGS)} */}
-      <PageHeader title="Leituras" />
+      <PageHeader title="Leituras" defaultBack={true}/>
       
       <View style={styles.container}>
         <Text style={styles.title}>Lista de Leituras</Text>
@@ -187,6 +191,9 @@ const Readings = () => {
             value={finalDate}
             onChangeText={(value) => setFinalDate(value)}
           />
+        </View>
+
+        <View style={styles.inputGroup}>
           <TextInputMask
             style={styles.input}
             type={'money'}
@@ -198,10 +205,18 @@ const Readings = () => {
               unit: 'R$ ',
               suffixUnit: ''
             }}
-            placeholder='R$ 100,00'
+            placeholder='R$ 99,99'
             value={String(valueReading)}
             onChangeText={(_, rawValue) => setValueReading(rawValue)}
-            keyboardType='decimal-pad'
+            keyboardType='number-pad'
+          />
+          <TextInputMask
+            style={styles.input}
+            type={'only-numbers'}
+            placeholder='100'
+            value={String(giftsQuantity)}
+            onChangeText={(value) => setGiftsQuantity(value)}
+            keyboardType='number-pad'
           />
         </View>
 
@@ -270,19 +285,13 @@ const styles = StyleSheet.create({
     //marginHorizontal: 100, 
     marginBottom: 30,
   },
-  datetimePicker: {
-    //flex: 1,
-    width: '30%',
-    
-    //height: 50,
-  },
   input: {
     //flex: 1,
-    width: '26%',
-    height: 30,
-    borderColor: "#000000",
+    width: '30%',
+    height: 28,
+    borderColor: '#000000',
     borderBottomWidth: 1.5,
-    marginHorizontal: 9,
+    marginHorizontal: 20,
     fontSize: 18
   },
   buttonGroup: {
@@ -346,7 +355,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#f1f1f1',
     borderRadius: 8,
-    backgroundColor: '#8257e5'
+    //backgroundColor: '#8257e5'
   },
   itemText:{
     //fontFamily: 'Archivo_400Regular',

@@ -31,7 +31,7 @@ export default App;
 const styles = StyleSheet.create({
   container: {
     flex: 1 , 
-    paddingTop: Platform.OS === 'android' ? 25 : 0,
+    paddingTop: Platform.OS === 'android' ? 35 : 0,
     backgroundColor: '#fff',
   }
  });
