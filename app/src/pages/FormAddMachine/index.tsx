@@ -47,7 +47,7 @@ const FormAddMachine = () => {
           alert(`Registro de máquina inválido, revise os campos!`);
         } else if (result && result.idMachine === Number(idMachine)) {
           alert(`Máquina já existe, escolha outro número!`);
-        } else if (giftsQuantity > maxGiftsQuantity) {
+        } else if (Number(giftsQuantity) > Number(maxGiftsQuantity)) {
           alert(`A quantidade atual de ${giftsQuantity} presentes não pode ser maior que a máxima ${maxGiftsQuantity} permitida!`);
         } else {
           handleSaveDataAndReturnToHome();

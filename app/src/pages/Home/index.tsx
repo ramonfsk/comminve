@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text ,Image, FlatList } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
 import { RectButton } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
@@ -26,6 +26,8 @@ const Home = () => {
   const [liquidCash, setLiquidCash] = useState(0);
   const [partialCash, setPartialCash] = useState(0);
   const [totalCash, setTotalCash] = useState(0);
+  // focus?
+  const isFocused = useIsFocused();
   // navigation
   const navigation = useNavigation();
   // check params
@@ -59,7 +61,7 @@ const Home = () => {
       setTotalCash(sumTotalCash);
       const partial = sumTotalCash * 0.2;
       setPartialCash(partial);
-      setLiquidCash(totalCash - partial);
+      setLiquidCash(sumTotalCash - partial);
     }
   }
 
@@ -87,9 +89,13 @@ const Home = () => {
     return data;
   }
 
+  // useEffect(() => {
+  //   _loadData();
+  // }, []);
+
   useEffect(() => {
-    _loadData();
-  }, []);
+    navigation.addListener('focus', () => _loadData());
+  }, [isFocused]);
   
   const renderItem = ({item} : { item: Machine }) => {
     return (
