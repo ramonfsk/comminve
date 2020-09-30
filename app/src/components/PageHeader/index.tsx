@@ -3,6 +3,7 @@ import { StyleSheet, View, Text } from 'react-native';
 import { BorderlessButton } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
 interface PageHeaderProps {
   title: string;
@@ -36,7 +37,8 @@ export default PageHeader;
 
 const styles = StyleSheet.create({ 
   container: {
-    //flex: 1,
+    // flex: 1,
+    // aspectRatio: 1,
     paddingVertical: 30,
     paddingHorizontal: 16,
     backgroundColor: '#8257e5',
@@ -49,10 +51,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   iconBackButton: {
-    fontSize: 34,
+    fontSize: hp('4.6%'),
   },
   textTitleNavbar: {
     fontFamily: 'Archivo_700Bold',
-    fontSize: 22
+    fontSize: hp('2.8%')
   }
 });

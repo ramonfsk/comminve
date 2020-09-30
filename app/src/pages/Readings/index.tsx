@@ -1,40 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, FlatList } from 'react-native';
-import { RectButton, TextInput } from 'react-native-gesture-handler';
+import { StyleSheet, View, Text, FlatList, Keyboard } from 'react-native';
+import { RectButton, TextInput, TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TextInputMask } from 'react-native-masked-text';
 import { useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
+import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
 import storage from '../../database/offline/';
 
 import PageHeader from '../../components/PageHeader';
+import { string } from 'prop-types';
 
 const STRGK_MACHINES = '@comminve#machines';
 
 interface Machine {
   idMachine: number,
-  isActive: boolean,
+  clockValue: number,
   cashValue: number,
-  giftsQuantity: number
+  giftsQuantity: number,
+  maxGiftsQuantity: number
 }
 
 interface Reading {
   idReading: number,
   typeReading: number,
   idMachine: number,
-  initialDate: string,
-  finalDate: string,
-  value: number,
-  giftsQuantity: number
+  date: string,
+  previousClockValue: number,
+  clockReadingValue: number,
+  cashValue: number,
+  leavingGiftsQuantity: number
 }
 
 const Readings = () => {
-  const [initialDate, setInitialDate] = useState('');
-  const [finalDate, setFinalDate] = useState('');
-  const [valueReading, setValueReading] = useState('');
-  const [giftsQuantity, setGiftsQuantity] = useState('');
-
+  // Reading
+  const [date, setDate] = useState('');
+  const [dateWithdrawCash, setDateWithdrawCash] = useState('');
+  const [clockReadingValue, setClockReadingValue] = useState('');
+  const [cashValue, setCashValue] = useState('');
+  const [leavingGiftsQuantity, setLeavingGiftsQuantity] = useState('');
+  // readings
   const [readings, setReadings] = useState<Reading[]>([]);
+  // machines
   const [machines, setMachines] = useState<Machine[]>([]);
 
   const isFocus = useIsFocused();
@@ -44,11 +51,117 @@ const Readings = () => {
 
   const STRGK_READINGS = `@comminve#machine${routeParams.idMachine}_readings`;
 
-  function _updateSortReadings(data) {
+  function addReading(lastIdReading: number) {
+    const machine = _getMachine();
+    if (!date || !clockReadingValue || !leavingGiftsQuantity) {
+      alert(`Registro de leitura inválido, revise os campos!`);
+    } else if (Number(clockReadingValue) < Number(machine.clockValue)) {
+      alert(`Valor de leitura do relógio inválida, revise o campo!`);
+    } else if (Number(leavingGiftsQuantity) > machine.giftsQuantity) {
+    } else {
+      const reading: Reading = { 
+        idReading: lastIdReading + 1, 
+        typeReading: 0,
+        idMachine: machine.idMachine,
+        date: date,
+        previousClockValue: machine.clockValue,
+        clockReadingValue: Number(clockReadingValue),
+        cashValue: ((Number(clockReadingValue) - machine.clockValue) * 2),
+        leavingGiftsQuantity: Number(leavingGiftsQuantity)
+      }
+      _updateMachineValues(reading.clockReadingValue, reading.cashValue, reading.leavingGiftsQuantity, 0, machine);
+      alert('Registro de leitura realizado com sucesso!');
+      _saveData(reading);
+      setDate('');
+      setClockReadingValue('');
+      setLeavingGiftsQuantity('');
+    }
+  }
+
+  function addWithdrawCash(lastIdReading: number) {
+    if (!dateWithdrawCash || !cashValue) {
+      alert(`Registro de retirada inválido, revise os campos!`);
+    } else {
+      const machine = _getMachine();
+      // const dateRaw = dateWithdrawCash.split('/');
+      // const date = new Date(`${dateRaw[1]}-${dateRaw[0]}-${dateRaw[2]}`);
+      const reading: Reading = { 
+        idReading: lastIdReading + 1, 
+        typeReading: 1,
+        idMachine: machine.idMachine,
+        date: dateWithdrawCash,
+        previousClockValue: 0,
+        clockReadingValue: 0,
+        cashValue: Number(cashValue),
+        leavingGiftsQuantity: 0
+      }
+      _updateMachineValues(reading.clockReadingValue, reading.cashValue, reading.leavingGiftsQuantity, 1, machine);
+      alert('Registro de leitura realizado com sucesso!');
+      _saveData(reading);
+      setDateWithdrawCash('');
+      setCashValue('');
+    }
+  }
+
+  function _updateMachineValues(clockValue: number, cashValue: number, leavingGiftsQuantity: number, typeReading: number, machine: Machine) {
+    let mach = machine;
+    mach.giftsQuantity -= leavingGiftsQuantity;
+    if (typeReading == 0) {
+      mach.clockValue = clockValue;
+      mach.cashValue += cashValue;
+    } else {
+      mach.cashValue -= cashValue;
+    }
+
+    const machinesSwap = machines;
+    machinesSwap.splice((mach.idMachine - 1), 1, machine);
+    setMachines(machinesSwap);
+    console.log(`subsSave: ${JSON.stringify(machines)}`);
+    storage.save(STRGK_MACHINES, machines)
+    .catch(err => console.log(`Failed to update machines data!\nDetails: ${err}`));
+  }
+
+  function _getMachine() {
+    const index = machines.findIndex(machine => machine.idMachine === Number(routeParams.idMachine));
+    const machine: Machine = machines[index];
+    return machine;
+  }
+
+  function _sortReadings(data: Reading[]) {
     if (data.length > 0) {
       const reads = data;
       reads.sort((a: Reading, b: Reading) => { return (b.idReading - a.idReading) });
-      setReadings(reads);
+      return reads;
+    }
+    return data;
+  }
+
+  function _saveData(data: Reading) {
+    const reads = readings;
+    reads.push(data);
+    const tmpReadings = _sortReadings(reads);
+    setReadings(tmpReadings);
+    storage.push(STRGK_READINGS, data)
+    .catch(err => console.log(`Failed to save readings data!\nDetails: ${err}`));
+  }
+
+  function handleAddReading() {
+    () => _loadData();
+    if (readings.length === 0) {
+      addReading(0);
+    } else {
+      const lastIdReading = readings[(readings.length - 1)].idReading;
+      addReading(lastIdReading);
+    }
+  }
+
+  function handleRemoveCash() {
+    () => _loadData();
+    if (readings.length === 0) {
+      addWithdrawCash(0);
+    } else {
+      const lastIdReading = readings[(readings.length - 1)].idReading;
+      addWithdrawCash(lastIdReading);
     }
   }
 
@@ -57,13 +170,13 @@ const Readings = () => {
       .then(data => {
           setMachines(data);
           console.log(`loadData_Machines(Readings)`);
-          //console.log(`readings: ${JSON.stringify(data)}`);
           storage.get(STRGK_READINGS)
             .then(data => {
               if (!data) {
                 console.log(`There are no persistent Readings data in AsyncStorage!`);
               } else {
-                setReadings(data);
+                const readings = _sortReadings(data);
+                setReadings(readings);
                 console.log(`loadData(Readings)!`);
               }
             })
@@ -72,90 +185,30 @@ const Readings = () => {
     .catch(err => console.log(`Error to restore machines from AsyncStorage.\n${err}`));
   }
 
-  function _saveData(data) {
-    storage.push(STRGK_READINGS, data)
-    .catch(err => console.log(`Failed to save readings data!\nDetails: ${err}`));
-    
-    let machinesSwap = machines;
-    const index = machinesSwap.findIndex(machine => machine.idMachine === Number(routeParams.idMachine));
-    let machine: Machine = machinesSwap[index];
-    machine.giftsQuantity = data.giftsQuantity;
-    if (data.typeReading == 0) {
-      machine.cashValue -= data.value;
-    } else {
-      machine.cashValue += data.value;
-    }  
-      
-    machinesSwap.splice(index, 1, machine);
-    setMachines(machinesSwap);
-    console.log(`subsSave: ${JSON.stringify(machines)}`);
-    storage.save(STRGK_MACHINES, machines)
-    .catch(err => console.log(`Failed to save machines data!\nDetails: ${err}`));
-  }
-  
-  function handleAddAndSaveEntry(lastIdReading: number, typeReading: number) {
-    if (!initialDate || !finalDate || !valueReading || !giftsQuantity) {
-      alert(`Registro de leitura inválido, revise os campos!`);
-    } else {
-      const iDate = new Date(initialDate);
-      const fDate = new Date(finalDate);
-      if (fDate.getDay < iDate.getDay || fDate.getMonth() < iDate.getMonth() || fDate.getFullYear() < iDate.getFullYear()) {
-        alert(`Data inválida!`);
-      } else {
-        let readingsSwap = [];
-        !readings ? readingsSwap = [] : readingsSwap = readings;
-        // const iDate = new Date(initialDate).toISOString();
-        // const fDate = new Date(finalDate).toISOString();
-        const reading = { 
-          idReading: lastIdReading + 1, 
-          typeReading: typeReading,
-          idMachine: routeParams.idMachine,
-          initialDate: initialDate,
-          finalDate: finalDate,
-          value: Number(valueReading),
-          giftsQuantity: Number(giftsQuantity)
-        }
-        readingsSwap.push(reading);
-        _updateSortReadings(readingsSwap);
-        alert('Registro de leitura realizado com sucesso!');
-        _saveData(reading);
-      }
-    }
-  }
-
-  function handleAddRemoval() {
-    _loadData();
-    if (readings.length === 0) {
-      handleAddAndSaveEntry(0, 0);
-    } else {
-      const lastIdReading = readings[(readings.length - 1)].idReading;
-      handleAddAndSaveEntry(lastIdReading, 0);
-    }
-  }
-
-  function handleAddEntry() {
-    _loadData();
-    if (readings.length === 0) {
-      handleAddAndSaveEntry(0, 1);
-    } else {
-      const lastIdReading = readings[(readings.length - 1)].idReading;
-      handleAddAndSaveEntry(lastIdReading, 1);
-    }
-  }
-
   useEffect(() => {
     _loadData();
   }, [isFocus]);
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item } : { item: Reading }) => {
     return (
       <View style={item.typeReading === 0 
-        ? [styles.item, { backgroundColor: '#E33D3D' }]
-        : [styles.item, { backgroundColor: '#04D361' }]
+        ? [styles.item, { backgroundColor: '#04D361' }]
+        : [styles.item, { backgroundColor: '#E33D3D' }]
       }>
-        <Text style={styles.itemText}>{`Data: ${item.initialDate} à ${item.finalDate}`}</Text>
-        <Text style={styles.itemText}>{`Valor: R$ ${item.value}`}</Text>
-        <Text style={styles.itemText}>{`Qtd: ${item.giftsQuantity}`}</Text>
+        <Text style={styles.itemText}>{`Data: ${item.date}`}</Text>
+        { item.previousClockValue 
+          ? <Text style={styles.itemText}>{`Leitura anterior: ${item.previousClockValue}`}</Text>
+          : null
+        }
+        { item.clockReadingValue 
+          ? <Text style={styles.itemText}>{`Relógio: ${item.clockReadingValue}`}</Text>
+          : null
+        }
+        <Text style={styles.itemText}>{`Valor: R$ ${item.cashValue}`}</Text>
+        { item.leavingGiftsQuantity 
+          ? <Text style={styles.itemText}>{`Saída de Ursos: ${item.leavingGiftsQuantity}`}</Text>
+          : null
+        }
       </View>
     );
   };
@@ -166,87 +219,100 @@ const Readings = () => {
       <PageHeader title="Leituras" defaultBack={true}/>
       
       <View style={styles.container}>
-        <Text style={styles.title}>Lista de Leituras</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <Text style={styles.title}>Lista de Leituras</Text>
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <TextInputMask
+                style={styles.input}
+                type={'datetime'}
+                placeholder='17/09/1995'
+                options={{
+                  format: 'DD/MM/YYYY',
+                }}
+                keyboardType='number-pad'
+                value={date}
+                onChangeText={(value) => setDate(value)}
+                clearTextOnFocus={true}
+              />
 
-        <View style={styles.inputGroup}>
-          <TextInputMask
-            style={styles.input}
-            type={'datetime'}
-            placeholder='10/09/1995'
-            options={{
-              format: 'DD/MM/YYYY',
-            }}
-            keyboardType='number-pad'
-            value={initialDate}
-            onChangeText={(value) => setInitialDate(value)}
-          />
-          <TextInputMask
-            style={styles.input}
-            type={'datetime'}
-            placeholder='17/09/1995'
-            options={{
-              format: 'DD/MM/YYYY',
-            }}
-            keyboardType='number-pad'
-            value={finalDate}
-            onChangeText={(value) => setFinalDate(value)}
-          />
-        </View>
+              <TextInputMask
+                style={styles.input}
+                type={'only-numbers'}
+                includeRawValueInChangeText={true}
+                placeholder='1200'
+                value={clockReadingValue}
+                onChangeText={(_, rawValue) => setClockReadingValue(rawValue)}
+                keyboardType='number-pad'
+              />
 
-        <View style={styles.inputGroup}>
-          <TextInputMask
-            style={styles.input}
-            type={'money'}
-            includeRawValueInChangeText={true}
-            options={{
-              precision: 2,
-              separator: ',',
-              delimiter: '.',
-              unit: 'R$ ',
-              suffixUnit: ''
-            }}
-            placeholder='R$ 99,99'
-            value={String(valueReading)}
-            onChangeText={(_, rawValue) => setValueReading(rawValue)}
-            keyboardType='number-pad'
-          />
-          <TextInputMask
-            style={styles.input}
-            type={'only-numbers'}
-            placeholder='100'
-            value={String(giftsQuantity)}
-            onChangeText={(value) => setGiftsQuantity(value)}
-            keyboardType='number-pad'
-          />
-        </View>
+              <TextInputMask
+                style={styles.input}
+                type={'only-numbers'}
+                includeRawValueInChangeText={true}
+                placeholder='12'
+                value={leavingGiftsQuantity}
+                onChangeText={(_, rawValue) => setLeavingGiftsQuantity(rawValue)}
+                keyboardType='number-pad'
+              />
+            </View>
 
-        <View style={styles.buttonGroup}>
-          <RectButton
-            onPress={handleAddRemoval}
-            style={styles.buttonRem}
-          >
-            <Text style={styles.buttonText}>
-              Retirada
-            </Text>
-            <MaterialIcons 
-              style={styles.buttonIcon} 
-              name={'money-off'} 
-            />
-          </RectButton>
+            <RectButton
+              onPress={handleAddReading}
+              style={[styles.button, { backgroundColor: '#04D361' }]}
+            >
+              <Text style={styles.buttonText}>
+                Entrada
+              </Text>
+              <MaterialIcons 
+                style={styles.buttonIcon} 
+                name={'timer'} 
+              />
+            </RectButton>
 
-          <RectButton
-            onPress={handleAddEntry}
-            style={styles.buttonAdd}
-          >
-            <Text style={styles.buttonText}>
-              Entrada
-            </Text>
-            <MaterialIcons 
-              style={styles.buttonIcon} 
-              name={'attach-money'} 
-            />
-          </RectButton>
-        </View>
+            <View style={styles.inputGroup}>
+              <TextInputMask
+                style={styles.input}
+                type={'datetime'}
+                placeholder='17/09/1995'
+                options={{
+                  format: 'DD/MM/YYYY',
+                }}
+                keyboardType='number-pad'
+                value={dateWithdrawCash}
+                onChangeText={(value) => setDateWithdrawCash(value)}
+              />
+              <TextInputMask
+                  style={styles.input}
+                  type={'money'}
+                  includeRawValueInChangeText={true}
+                  options={{
+                    // mask: 'R$ 999,99',
+                    precision: 0,
+                    separator: ',',
+                    delimiter: '.',
+                    unit: 'R$ ',
+                  }}
+                  placeholder='R$ 999'
+                  value={String(cashValue)}
+                  onChangeText={(_, rawValue) => setCashValue(String(rawValue))}
+                  keyboardType='number-pad'
+                />
+              </View>
+            <RectButton
+              onPress={handleRemoveCash}
+              style={[styles.button, { backgroundColor: '#E33D3D' }]}
+            >
+              <Text style={styles.buttonText}>
+                Retirada
+              </Text>
+              <MaterialIcons 
+                style={styles.buttonIcon} 
+                name={'money-off'} 
+              />
+            </RectButton>
+          </View>
+        </TouchableWithoutFeedback>
 
         <View style={styles.listItens}>
           <FlatList
@@ -268,75 +334,58 @@ export default Readings;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#fff',
   },
   title: {
     fontFamily: 'Archivo_700Bold',
-    fontSize: 26,
-    // textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 30,
+    fontSize: hp('3.2%'),
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: hp('2%'),
+  },
+  form: {
+    alignItems: 'center',
+    // backgroundColor: 'blue'
   },
   inputGroup: {
     flexDirection: 'row',
     //justifyContent: 'space-between',
     //marginHorizontal: 100, 
-    marginBottom: 30,
+    marginBottom: hp('1.6%'),
   },
   input: {
-    //flex: 1,
-    width: '30%',
-    height: 28,
+    width: wp('24%'),
+    height: hp('3%'),
     borderColor: '#000000',
     borderBottomWidth: 1.5,
-    marginHorizontal: 20,
-    fontSize: 18
+    marginHorizontal: wp('4%'),
+    fontSize: hp('2.2%'),
+    textAlign: 'center'
   },
-  buttonGroup: {
-    //position: 'absolute',
-    width: '76%',
-    bottom: 12,
-    alignItems: 'center',
-  },
-  buttonRem: {
+  button: {
     flexDirection: 'row',
-    width: '80%',
-    height: 42,
+    width: wp('90%'),
+    height: hp('5.6%'),
     //marginTop: '16%',
-    marginBottom: 12,
+    marginBottom: hp('1.2%'),
     paddingHorizontal: 18,
     justifyContent: 'space-between',
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#E33D3D'
-  },
-  buttonAdd: {
-    flexDirection: 'row',
-    width: '80%',
-    height: 42,
-    //marginTop: '16%',
-    marginBottom: 12,
-    paddingHorizontal: 18,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: '#04D361'
   },
   buttonText: {
     fontFamily: 'Archivo_400Regular',
-    fontSize: 24,
+    fontSize: hp('3.2%'),
     color: '#fff'
   },
   buttonIcon: {
-    fontSize: 30,
+    fontSize: hp('4.2%'),
     color: '#fff'
   },
   listItens: {
     flex: 1,
-    width: '90%',
-    //height: 250,
+    width: wp('90%'),
+    alignSelf: 'center',
     marginBottom: 12,
     paddingHorizontal: 8,
     paddingVertical: 8,
@@ -355,11 +404,10 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#f1f1f1',
     borderRadius: 8,
-    //backgroundColor: '#8257e5'
   },
   itemText:{
     //fontFamily: 'Archivo_400Regular',
-    fontSize: 17,
+    fontSize: hp('2%'),
     //lineHeight: 15,
     color: '#fff'
   },

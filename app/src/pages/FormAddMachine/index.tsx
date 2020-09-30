@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, KeyboardAvoidingView, Platform, Switch, AsyncStorage, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { RectButton } from 'react-native-gesture-handler';
+import { RectButton, TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import { TextInputMask } from 'react-native-masked-text'
+import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
-import storage from '../../database/offline/';
+import storage from '../../database/offline/index.js';
 
 import PageHeader from '../../components/PageHeader';
 
@@ -13,23 +14,23 @@ const STRGK_MACHINES = '@comminve#machines';
 
 interface Machine {
   idMachine: number,
-  isActive: boolean,
+  clockValue: number,
   cashValue: number,
-  giftsQuantity: number
+  giftsQuantity: number,
+  maxGiftsQuantity: number
 }
 
 const FormAddMachine = () => {
+  // form data
   const [idMachine, setIdMachine] = useState('');
-  const [isActive, setIsActive] = useState(false);
-  const [cashValue, setCashValue] = useState('');
-  // rawValue
+  const [clockValue, setClockValue] = useState('');
+  const [maxGiftsQuantity, setMaxGiftsQuantity] = useState('');
   const [giftsQuantity, setGiftsQuantity] = useState('');
+  // machines
   const [machines, setMachines] = useState<Machine[]>([]);
-  // switch
-  const toggleSwitch = () => setIsActive(previousState => !previousState);
-
+  // navigation
   const navigation = useNavigation();
-
+  // functions
   function _handleAddMachine() {
     try {
       _loadData();
@@ -41,11 +42,13 @@ const FormAddMachine = () => {
         }
       } else {
         const result = machines.find(machine => machine.idMachine === Number(idMachine));
-        console.log(`result: ${JSON.stringify(result)}`);
+        //console.log(`result: ${JSON.stringify(result)}`);
         if (!idMachine) {
           alert(`Registro de máquina inválido, revise os campos!`);
         } else if (result && result.idMachine === Number(idMachine)) {
           alert(`Máquina já existe, escolha outro número!`);
+        } else if (giftsQuantity > maxGiftsQuantity) {
+          alert(`A quantidade atual de ${giftsQuantity} presentes não pode ser maior que a máxima ${maxGiftsQuantity} permitida!`);
         } else {
           handleSaveDataAndReturnToHome();
         }
@@ -56,33 +59,27 @@ const FormAddMachine = () => {
   }
 
   function handleSaveDataAndReturnToHome() {
-    const machine = {
+    const machine: Machine = {
       idMachine: Number(idMachine),
-      isActive: isActive,
-      cashValue: Number(cashValue),
-      giftsQuantity: Number(giftsQuantity)
+      clockValue: Number(clockValue),
+      cashValue: 0,
+      giftsQuantity: Number(giftsQuantity),
+      maxGiftsQuantity: Number(maxGiftsQuantity)
     };
     _saveData(machine);
-    alert('Máquina cadastrada com sucesso!');
+    alert(`Máquina ${idMachine} cadastrada com sucesso!`);
     navigation.reset({
       index: 0,
       routes: [{
         name: 'Home',
-        params: machines
+        params: machine
       }],
     });
   }
 
-  function _addSortMachines(machine) {
-    const machs = machines;
-    machs.push(machine);
-    machs.sort((a: Machine, b: Machine) => { return (a.idMachine - b.idMachine) });
-    setMachines(machs);
-  }
-
   function _loadData() {
     storage.get(STRGK_MACHINES)
-      .then(data => {
+      .then((data: Machine[]) => {
         if (!data) {
           console.log(`There are no persistent Machines data in AsyncStorage!`);
         } else {
@@ -90,81 +87,68 @@ const FormAddMachine = () => {
           console.log(`loadData(FormAddMachine)`);
         }
       })
-    .catch(err => console.log(`Error to restore machines from AsyncStorage.\n${err}`));
+    .catch((err: any) => console.log(`Error to restore machines from AsyncStorage.\n${err}`));
   }
 
-  function _saveData(data: {}) {
-    _addSortMachines(data);
+  function _saveData(data: Machine) {
     storage.push(STRGK_MACHINES, data)
-    .catch(err => console.log(`Failed to save data!\nDetails: ${err}`));
+    .catch((err: any) => console.log(`Failed to save data!\nDetails: ${err}`));
   }
-
+  // hooks
   useEffect(() => {
     _loadData();
   }, []);
-
+  // render
   return (
-    <>
+    <View style={styles.container}>
       <PageHeader title='Registro de Máquina' defaultBack={true} />
+        <TouchableWithoutFeedback style={styles.form} onPress={Keyboard.dismiss}>
+          <TextInputMask
+            style={styles.input}
+            type={'only-numbers'}
+            placeholder='Número da Máquina: 1'
+            keyboardType='number-pad'
+            value={String(idMachine)}
+            onChangeText={(text) => setIdMachine(text)}
+          />
 
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <View style={styles.inputGroupBlock}>
-            <TextInputMask
-              style={styles.input}
-              type={'only-numbers'}
-              placeholder='Número'
-              keyboardType='number-pad'
-              value={String(idMachine)}
-              onChangeText={(text) => setIdMachine(text)}
-            />
-          </View>
+          <TextInputMask
+            style={styles.input}
+            type={'only-numbers'}
+            includeRawValueInChangeText={true}
+            placeholder='Valor atual do relógio: 1299'
+            value={String(clockValue)}
+            onChangeText={(value) => setClockValue(value)}
+            keyboardType='number-pad'
+          />
 
-          <View style={styles.inputGroupBlock}>
-            <Text style={styles.label}>Ativa?</Text>
-            <Switch
-              ios_backgroundColor='#3e3e3e'
-              onValueChange={toggleSwitch}
-              value={isActive}
-            />
-          </View>
-        </View>
+          <TextInputMask
+            style={styles.input}
+            type={'only-numbers'}
+            placeholder='Quantidade atual: 100'
+            value={String(giftsQuantity)}
+            onChangeText={(value) => setGiftsQuantity(value)}
+            keyboardType='number-pad'
+          />
 
-        <TextInputMask
-          style={styles.input}
-          type={'money'}
-          includeRawValueInChangeText={true}
-          options={{
-            precision: 2,
-            separator: ',',
-            delimiter: '.',
-            unit: 'R$ ',
-            suffixUnit: ''
-          }}
-          placeholder='R$ 99,99'
-          value={String(cashValue)}
-          onChangeText={(_, rawValue) => setCashValue(String(rawValue))}
-          keyboardType='number-pad'
-        />
+          <TextInputMask
+            style={styles.input}
+            type={'only-numbers'}
+            placeholder='Quantidade Máxima: 120'
+            value={String(maxGiftsQuantity)}
+            onChangeText={(value) => setMaxGiftsQuantity(value)}
+            keyboardType='number-pad'
+          />
 
-        <TextInputMask
-          style={styles.input}
-          type={'only-numbers'}
-          placeholder='100'
-          value={String(giftsQuantity)}
-          onChangeText={(value) => setGiftsQuantity(value)}
-          keyboardType='number-pad'
-        />
-
-        <RectButton 
-          style={styles.button}
-          onPress={_handleAddMachine}
-        >
-          <Text style={styles.buttonText}>Salvar</Text>
-          <MaterialIcons name="save" size={32} color={'#fff'}/>
-        </RectButton>
-      </View>
-    </>
+          <RectButton 
+            style={styles.button}
+            onPress={_handleAddMachine}
+          >
+            <Text style={[styles.buttonText]}>Salvar</Text>
+            <MaterialIcons name="save" size={hp('4%')} color={'#fff'}/>
+          </RectButton>
+        </TouchableWithoutFeedback>
+    </View>
   );
 }
 
@@ -173,44 +157,28 @@ export default FormAddMachine;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    //justifyContent: 'space-between',
     backgroundColor: '#fff'
   },
   form: {
-    //flex: 1,
-    //justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
-  },
-  input: {
-    width: '86%',
-    height: 50,
-    borderColor: "#000000",
-    borderBottomWidth: 1.5,
-    marginBottom: 12,
-    fontSize: 18
-  },
-  inputGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginTop: 8,
     // backgroundColor: 'red'
   },
-  inputGroupBlock: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '43%'
-  },
-  label: {
-    paddingLeft: '38%',
+  input: {
+    width: wp('80%'),
+    height: hp('8%'),
+    marginBottom: 12,
+    borderColor: "#000000",
+    borderBottomWidth: 1.5,
     fontSize: 18,
+    // backgroundColor: 'blue'
   },
   button: {
-    // position: 'absolute',
     flexDirection: 'row',
-    width: '70%',
-    height: 46,
+    width: wp('80%'),
+    height: hp('6.6%'),
     paddingHorizontal: 18,
-    marginTop: 22,
+    marginTop: 30,
     justifyContent: 'space-between',
     alignItems: 'center',
     borderRadius: 6,
@@ -218,7 +186,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: 'Archivo_700Bold',
-    fontSize: 26,
+    fontSize: hp('4%'),
     color: '#fff'
   }
 });
