@@ -4,19 +4,20 @@ import { StyleSheet, View, Text, Switch, KeyboardAvoidingView, Platform, Keyboar
 import { TextInputMask } from 'react-native-masked-text';
 import { RectButton, TouchableWithoutFeedback, ScrollView } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
-import Sign from '../../components/Signature/index';
+import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
-import storage from '../../database/offline/';
+import storage from '../../database/offline/index.js';
+import Sign from '../../components/Signature/index.js';
 
 import PageHeader from '../../components/PageHeader';
 
 interface Machine {
   idMachine: number,
-  isActive: boolean,
+  clockValue: number,
   cashValue: number,
-  giftsQuantity: number
+  giftsQuantity: number,
+  maxGiftsQuantity: number
 }
-
 interface Contract {
   idContract: number,
   isActive: boolean,
@@ -116,10 +117,10 @@ const FormAddContract = () => {
         index: 0,
         routes: [{
           name: 'Contracts',
-          params: { contracts: contracts }
+          params: { contract: contract }
         }],
       });
-      // fiz tudo, vlw flw!
+      // // fiz tudo, vlw flw!
       navigation.goBack();
     }
   }
@@ -133,35 +134,28 @@ const FormAddContract = () => {
   }
 
   function _saveData(data: Contract) {
-    _addSortContracts(data);
     _saveAllocationValue(data);
-
-    storage.save(STRGK_CONTRACTS, contracts)
-    .catch(err => console.log(`Failed to save contracts data!\nDetails: ${err}`));
+    const cntrcs = contracts;
+    cntrcs.push(data);
+    storage.save(STRGK_CONTRACTS, cntrcs)
+    .catch((err: Error) => console.log(`Failed to save contracts data!\nDetails: ${err}`));
   }
 
   function _saveAllocationValue(data: Contract) {
     if (!data.typeContract) {
       const alloc: Allocation = { typeContract: data.typeContract, value: data.percentage };
       storage.save(STRGK_ALOCATIONS, alloc)
-      .catch(err => console.log(`Failed to save data!\nDetails: ${err}`));
+      .catch((err: Error) => console.log(`Failed to save data!\nDetails: ${err}`));
     } else {
       const alloc: Allocation = { typeContract: data.typeContract, value: data.rentValue.toString() };
       storage.save(STRGK_ALOCATIONS, alloc)
-      .catch(err => console.log(`Failed to save data!\nDetails: ${err}`));
+      .catch((err: Error) => console.log(`Failed to save data!\nDetails: ${err}`));
     }
-  }
-
-  function _addSortContracts(contract) {
-    let cntrcs = contracts;
-    cntrcs.push(contract);
-    cntrcs.sort((a: Contract, b: Contract) => { return (a.idContract - b.idContract) });
-    setContracts(cntrcs);
   }
 
   function _loadData() {
     storage.get(STRGK_CONTRACTS)
-      .then(data => {
+      .then((data: Contract[]) => {
         if (!data) {
           console.log(`There are no persistent Contracts data in AsyncStorage!`);
         } else {
@@ -169,7 +163,7 @@ const FormAddContract = () => {
           console.log(`loadData(FormAddContract)`);
         }
       })
-    .catch(err => console.log(`Error to restore contracts from AsyncStorage.\n${err}`));
+    .catch((err: Error) => console.log(`Error to restore contracts from AsyncStorage.\n${err}`));
   }
 
   useEffect(() => {
@@ -177,148 +171,144 @@ const FormAddContract = () => {
   }, []);
 
   return (
-    <ScrollView
-    // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    style={styles.container}
-    >
-      {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
-          <View style={styles.inner}>
-          <PageHeader title='Registro de Contrato' defaultBack={false} />
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <View style={styles.inputGroupBlock}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder='Shopping'
-                    maxLength={100}
-                    keyboardType='default'
-                    value={placeName}
-                    onChangeText={(text) => setPlaceName(text)}
-                  />
-                </View>
+    <>
+      <PageHeader title='Registro de Contrato' defaultBack={false} />
+      <ScrollView 
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.form}>
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={[styles.input, { width: wp('50%') }]}
+              placeholder='Shopping'
+              maxLength={100}
+              keyboardType='default'
+              value={placeName}
+              onChangeText={(text) => setPlaceName(text)}
+            />
 
-                <View style={styles.inputGroupBlock}>
-                  <Text style={styles.label}>Aluguel?</Text>
-                  <Switch
-                    ios_backgroundColor='#3e3e3e'
-                    onValueChange={toggleSwitch}
-                    value={typeContract}
-                  />
-                </View>
-              </View>
-
-              <TextInput
-                style={styles.input}
-                placeholder='QR 400 Conjunto C Lote 00'
-                maxLength={100}
-                keyboardType='default'
-                value={address}
-                onChangeText={(text) => setAddress(text)}
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder='Santa Maria'
-                maxLength={100}
-                keyboardType='default'
-                value={city}
-                onChangeText={(text) => setCity(text)}
-              />
-
-              <TextInputMask
-                style={styles.input}
-                type={'custom'}
-                options={{
-                  mask: '99999-999'
-                }}
-                placeholder='72000-000'
-                keyboardType='number-pad'
-                value={cep}
-                onChangeText={(text) => setCep(text)}
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder='Edvaldo Lemos'
-                maxLength={100}
-                keyboardType='default'
-                value={locatorName}
-                onChangeText={(text) => setLocatorName(text)}
-              />
-
-              <TextInputMask
-                style={styles.input}
-                type={'cpf'}
-                placeholder='000.000.000-99'
-                keyboardType='number-pad'
-                value={String(cpf)}
-                onChangeText={(text) => setCpf(text)}
-              />
-
-              <TextInputMask
-                style={styles.input}
-                type={'cel-phone'}
-                options={{
-                  maskType: 'BRL',
-                  withDDD: true,
-                  dddMask: '(99) '
-                }}
-                placeholder='(61) 99999-9999'
-                keyboardType='number-pad'
-                value={String(cellphone)}
-                onChangeText={(text) => setCellphone(text)}
-              />
-
-              {typeContract ? (
-                <TextInputMask
-                  style={styles.input}
-                  type={'money'}
-                  includeRawValueInChangeText={true}
-                  options={{
-                    precision: 2,
-                    separator: ',',
-                    delimiter: '.',
-                    unit: 'R$ ',
-                    suffixUnit: ''
-                  }}
-                  placeholder='R$ 99,99'
-                  value={String(rentValue)}
-                  onChangeText={(_, rawValue) => setRentValue(String(rawValue))}
-                  keyboardType='number-pad'
-                />
-              ) : (
-                <TextInputMask
-                style={styles.input}
-                type={'custom'}
-                options={{
-                  mask: '99%',
-                }}
-                placeholder='12%'
-                keyboardType='number-pad'
-                value={percentage}
-                onChangeText={(text) => setPercentage(text)}
-                />
-              )}
-
-              <View style={styles.signature}>
-                <Sign
-                  key='sign'
-                  onOK={_handleSignature} 
-                  text={'ASSINE AQUI'}
-                />
-              </View>
-
-              <RectButton 
-                style={styles.button}
-                onPress={_handleAddContract}
-              >
-                <Text style={styles.buttonText}>Salvar</Text>
-                <MaterialIcons name="save" size={32} color={'#fff'}/>
-              </RectButton>
-            </View>
+            <Text style={styles.label}>Aluguel?</Text>
+            <Switch
+              ios_backgroundColor='#3e3e3e'
+              onValueChange={toggleSwitch}
+              value={typeContract}
+            />
           </View>
-      {/* </TouchableWithoutFeedback> */}
-    </ScrollView>
+
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <TextInput
+              style={styles.input}
+              placeholder='QR 400 Conjunto C Lote 00'
+              maxLength={100}
+              keyboardType='default'
+              value={address}
+              onChangeText={(text) => setAddress(text)}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder='Santa Maria'
+              maxLength={100}
+              keyboardType='default'
+              value={city}
+              onChangeText={(text) => setCity(text)}
+            />
+
+            <TextInputMask
+              style={styles.input}
+              type={'custom'}
+              options={{
+                mask: '99999-999'
+              }}
+              placeholder='72000-000'
+              keyboardType='number-pad'
+              value={cep}
+              onChangeText={(text) => setCep(text)}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder='Edvaldo Lemos'
+              maxLength={100}
+              keyboardType='default'
+              value={locatorName}
+              onChangeText={(text) => setLocatorName(text)}
+            />
+
+            <TextInputMask
+              style={styles.input}
+              type={'cpf'}
+              placeholder='000.000.000-99'
+              keyboardType='number-pad'
+              value={String(cpf)}
+              onChangeText={(text) => setCpf(text)}
+            />
+
+            <TextInputMask
+              style={styles.input}
+              type={'cel-phone'}
+              options={{
+                maskType: 'BRL',
+                withDDD: true,
+                dddMask: '(99) '
+              }}
+              placeholder='(61) 99999-9999'
+              keyboardType='number-pad'
+              value={String(cellphone)}
+              onChangeText={(text) => setCellphone(text)}
+            />
+
+            {typeContract ? (
+              <TextInputMask
+                style={styles.input}
+                type={'money'}
+                includeRawValueInChangeText={true}
+                options={{
+                  // mask: 'R$ 999,99',
+                  precision: 0,
+                  separator: ',',
+                  delimiter: '.',
+                  unit: 'R$ ',
+                }}
+                placeholder='R$ 999'
+                value={String(rentValue)}
+                onChangeText={(_, rawValue) => setRentValue(String(rawValue))}
+                keyboardType='number-pad'
+              />
+            ) : (
+              <TextInputMask
+              style={styles.input}
+              type={'custom'}
+              options={{
+                mask: '99%',
+              }}
+              placeholder='12%'
+              keyboardType='number-pad'
+              value={percentage}
+              onChangeText={(text) => setPercentage(text)}
+              />
+            )}
+          </TouchableWithoutFeedback>
+
+          <View style={styles.signature}>
+            <Sign
+              key='sign'
+              onOK={_handleSignature} 
+              text={'ASSINE AQUI'}
+            />
+          </View>
+
+          <RectButton 
+            style={styles.button}
+            onPress={_handleAddContract}
+          >
+            <Text style={styles.buttonText}>Salvar</Text>
+            <MaterialIcons name="save" size={32} color={'#fff'}/>
+          </RectButton>
+        </View>
+      </ScrollView>
+    </>
   );
 }
 
@@ -326,52 +316,41 @@ export default FormAddContract;
 
 const styles = StyleSheet.create({
   container: {
-    // flex: 1,
-    //justifyContent: 'space-between',
+    flex: 1,
     backgroundColor: '#fff'
   },
-  inner: {
-    paddingBottom: 26,
-    // flex: 1,
-    justifyContent: "space-around"
-  },
   form: {
-    // flex: 1,
-    // height: '100%',
-    //justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 8,
+    // backgroundColor: 'red'
   },
   input: {
-    width: '86%',
-    height: 50,
+    width: wp('88%'),
+    height: hp('7.2%'),
     borderColor: "#000000",
     borderBottomWidth: 1.5,
     marginBottom: 9,
-    fontSize: 18
+    fontSize: hp('2.2%')
   },
   inputGroup: {
     flexDirection: 'row',
+    
     alignItems: 'center',
+    justifyContent: 'space-between'
     // backgroundColor: 'red'
-  },
-  inputGroupBlock: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '43%'
   },
   label: {
     marginRight: 10,
-    paddingLeft: '30%',
-    fontSize: 18,
+    paddingLeft: wp('10%'),
+    fontSize: hp('2.2%'),
   },
   button: {
     // position: 'absolute',
     flexDirection: 'row',
-    width: '70%',
-    height: 46,
+    width: wp('80%'),
+    height: hp('6.6%'),
     paddingHorizontal: 18,
-    marginTop: 22,
+    marginVertical: 8,
     justifyContent: 'space-between',
     alignItems: 'center',
     borderRadius: 6,
@@ -379,11 +358,11 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: 'Archivo_700Bold',
-    fontSize: 26,
+    fontSize: hp('4%'),
     color: '#fff'
   },
   signature: {
-    width: '86%',
-    height: 140,
+    width: wp('60%'),
+    height: hp('14%'),
   }
 });

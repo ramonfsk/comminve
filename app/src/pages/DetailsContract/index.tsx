@@ -1,9 +1,10 @@
 import React from 'react';
 import { useRoute } from '@react-navigation/native';
 import { StyleSheet, View, Text, Image } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
 import PageHeader from '../../components/PageHeader';
-import { ScrollView } from 'react-native-gesture-handler';
 
 interface Contract {
   idContract: number,
@@ -28,8 +29,6 @@ interface Params {
 }
 
 const DetailsContract = () => {
-
-
   const route = useRoute();
   const { contract } = route.params as Params;
 
@@ -63,7 +62,6 @@ const DetailsContract = () => {
           source={{ uri: contract.signatureB64 }}
         />
       </ScrollView>
-      {/* <Text>{JSON.stringify(routeParams)}</Text> */}
     </>
   );
 }
@@ -76,21 +74,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff'
   },
   details: {
-    marginVertical: 12,
+    marginVertical: 8,
     marginHorizontal: 18,
-    //alignItems: 'flex-start'
   },
   detailsText:{
-    fontSize: 24,
+    fontSize: hp('2.8%'),
     marginBottom: 6,
   },
-  imgSignView: {
-    // flex: 1,
-    
-  },
   imgSign: {
-    width: 230,
-    height: 230,
+    width: wp('68%'),
+    height: hp('28%'),
     alignSelf: 'center',
   }
 });

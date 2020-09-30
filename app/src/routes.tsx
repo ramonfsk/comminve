@@ -5,8 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import Home from './pages/Home';
 import FormAddMachine from './pages/FormAddMachine';
 import MachineDetails from './pages/MachineDetails';
-import Historic from './pages/Contract';
-import CashWithdrawal from './pages/Readings';
+import Contracts from './pages/Contracts';
+import Readings from './pages/Readings';
 
 const { Navigator, Screen } = createStackNavigator();
 
@@ -17,8 +17,8 @@ const Routes = () => {
         <Screen name="Home" component={Home} />
         <Screen name="FormAddMachine" component={FormAddMachine} />
         <Screen name="MachineDetails" component={MachineDetails} />
-        <Screen name="Historic" component={Historic} />
-        <Screen name="CashWithdrawal" component={CashWithdrawal} />
+        <Screen name="Contracts" component={Contracts} />
+        <Screen name="Readings" component={Readings} />
       </Navigator>
     </NavigationContainer>
   );

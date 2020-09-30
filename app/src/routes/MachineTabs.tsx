@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
+import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
 import MachineDetails from '../pages/MachineDetails';
 import Contracts from '../pages/Contracts';
@@ -23,23 +24,21 @@ const MachineTabs = () => {
         style: {
           elevation: 0,
           shadowOpacity: 0,
-          height: 64
+          height: hp('8.8%')
         },
         tabStyle: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          //borderTopWidth: 2.6,
-          //borderColor: '#000'
         },
         iconStyle:{
           flex: 0,
-          width: 24,
-          height: 24
+          width: wp('4%'),
+          height: hp('4%')
         },
         labelStyle: {
           fontFamily: 'Archivo_700Bold',
-          fontSize: 14,
+          fontSize: hp('2%'),
           marginHorizontal: 12
         },
         inactiveBackgroundColor: '#fafafc',

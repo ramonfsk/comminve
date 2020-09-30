@@ -33,7 +33,7 @@ const Sign = ({text, onOK}) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={showSignature}><Text>Show signature view</Text></TouchableOpacity>
+      <TouchableOpacity onPress={showSignature}><Text>Clique aqui para assinar!</Text></TouchableOpacity>
       {show && <Modal>
         <SignatureScreen
           ref={ref}
