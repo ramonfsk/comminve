@@ -6,19 +6,9 @@ import { RectButton, TouchableWithoutFeedback } from 'react-native-gesture-handl
 import { TextInputMask } from 'react-native-masked-text'
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
-import storage from '../../database/offline/index.js';
+import MachineService, { Machine } from '../../services/machine.service';
 
 import PageHeader from '../../components/PageHeader';
-
-const STRGK_MACHINES = '@comminve#machines';
-
-interface Machine {
-  idMachine: number,
-  clockValue: number,
-  cashValue: number,
-  giftsQuantity: number,
-  maxGiftsQuantity: number
-}
 
 const FormAddMachine = () => {
   // form data
@@ -41,11 +31,11 @@ const FormAddMachine = () => {
           handleSaveDataAndReturnToHome();
         }
       } else {
-        const result = machines.find(machine => machine.idMachine === Number(idMachine));
+        const result = machines.find(machine => machine.id === Number(idMachine));
         //console.log(`result: ${JSON.stringify(result)}`);
         if (!idMachine) {
           alert(`Registro de máquina inválido, revise os campos!`);
-        } else if (result && result.idMachine === Number(idMachine)) {
+        } else if (result && result.id === Number(idMachine)) {
           alert(`Máquina já existe, escolha outro número!`);
         } else if (Number(giftsQuantity) > Number(maxGiftsQuantity)) {
           alert(`A quantidade atual de ${giftsQuantity} presentes não pode ser maior que a máxima ${maxGiftsQuantity} permitida!`);
@@ -60,7 +50,7 @@ const FormAddMachine = () => {
 
   function handleSaveDataAndReturnToHome() {
     const machine: Machine = {
-      idMachine: Number(idMachine),
+      id: Number(idMachine),
       clockValue: Number(clockValue),
       cashValue: 0,
       giftsQuantity: Number(giftsQuantity),
@@ -68,31 +58,31 @@ const FormAddMachine = () => {
     };
     _saveData(machine);
     alert(`Máquina ${idMachine} cadastrada com sucesso!`);
-    navigation.reset({
-      index: 0,
-      routes: [{
-        name: 'Home',
-        params: machine
-      }],
-    });
+    if(navigation.canGoBack()) {
+      navigation.goBack();
+    };
   }
 
   function _loadData() {
-    storage.get(STRGK_MACHINES)
-      .then((data: Machine[]) => {
-        if (!data) {
-          console.log(`There are no persistent Machines data in AsyncStorage!`);
+    MachineService.findAll()
+      .then(data => {
+        if (!data || data.length === 0) {
+          console.log(`There are no persistent Machines data in SQLite!`);
         } else {
-          setMachines(data);
-          console.log(`loadData(FormAddMachine)`);
+          console.log(`loadData(Home)`);
+          const machines = data;
+          setMachines(machines);
         }
       })
-    .catch((err: any) => console.log(`Error to restore machines from AsyncStorage.\n${err}`));
+    .catch((err: any) => console.log(`Error to restore machines from SQLite.\n${err}`));
   }
 
-  function _saveData(data: Machine) {
-    storage.push(STRGK_MACHINES, data)
-    .catch((err: any) => console.log(`Failed to save data!\nDetails: ${err}`));
+  async function _saveData(data: Machine) {
+    try {
+      await MachineService.addData(data);
+    } catch (err) {
+      console.log(`Failed to save new machine data!\nDetails: ${err}`);
+    }
   }
   // hooks
   useEffect(() => {

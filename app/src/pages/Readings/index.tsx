@@ -1,39 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, FlatList, Keyboard } from 'react-native';
-import { RectButton, TextInput, TouchableWithoutFeedback } from 'react-native-gesture-handler';
+import { RectButton, TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TextInputMask } from 'react-native-masked-text';
-import { useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useRoute, useIsFocused } from '@react-navigation/native';
+import moment from 'moment';
+import 'moment/locale/pt-br';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
-import storage from '../../database/offline/';
-
 import PageHeader from '../../components/PageHeader';
-import { string } from 'prop-types';
-
-const STRGK_MACHINES = '@comminve#machines';
-
-interface Machine {
-  idMachine: number,
-  clockValue: number,
-  cashValue: number,
-  giftsQuantity: number,
-  maxGiftsQuantity: number
-}
-
-interface Reading {
-  idReading: number,
-  typeReading: number,
-  idMachine: number,
-  date: string,
-  previousClockValue: number,
-  clockReadingValue: number,
-  cashValue: number,
-  leavingGiftsQuantity: number
-}
+import MachineService, { Machine } from '../../services/machine.service';
+import ReadingService, { Reading } from '../../services/reading.service';
 
 const Readings = () => {
   // Reading
+  const [insertedId, setInsertedId] = useState(0);
   const [date, setDate] = useState('');
   const [dateWithdrawCash, setDateWithdrawCash] = useState('');
   const [clockReadingValue, setClockReadingValue] = useState('');
@@ -41,161 +22,154 @@ const Readings = () => {
   const [leavingGiftsQuantity, setLeavingGiftsQuantity] = useState('');
   // readings
   const [readings, setReadings] = useState<Reading[]>([]);
-  // machines
-  const [machines, setMachines] = useState<Machine[]>([]);
+  // machine
+  const [machine, setMachine] = useState<Machine>();
 
   const isFocus = useIsFocused();
 
   const route = useRoute();
   const routeParams = route.params as Machine;
 
-  const STRGK_READINGS = `@comminve#machine${routeParams.idMachine}_readings`;
+  function handleAddReading() {
+    if (machine) {
+      if (!moment(date).isValid() || !clockReadingValue || !leavingGiftsQuantity) {
+        alert(`Registro de leitura inválido, revise os campos!`);
+      } else if (Number(clockReadingValue) < Number(machine.clockValue)) {
+        alert(`Valor de leitura do relógio inválida, revise o campo!`);
+      } else if (Number(leavingGiftsQuantity) > machine.giftsQuantity) {
+        alert(`Não há presentes suficientes para serem retirados da máquina!`);
+      } else {
+        let reading: Reading = {
+          id: 0, // index is unusable
+          typeReading: false,
+          dateReading: date,
+          previousClockValue: machine.clockValue,
+          clockReadingValue: Number(clockReadingValue),
+          cashValue: ((Number(clockReadingValue) - machine.clockValue) * 2),
+          leavingGiftsQuantity: Number(leavingGiftsQuantity),
+          idMachine: machine.id,
+        }
+        if (reading.clockReadingValue && reading.cashValue && reading.leavingGiftsQuantity) {
+          _updateMachineValues(reading.clockReadingValue, reading.cashValue, reading.leavingGiftsQuantity, false);
+          const swapReadings = readings;
+          reading.id = insertedId;
+          swapReadings.push(reading);
+          _saveData(reading);
 
-  function addReading(lastIdReading: number) {
-    const machine = _getMachine();
-    if (!date || !clockReadingValue || !leavingGiftsQuantity) {
-      alert(`Registro de leitura inválido, revise os campos!`);
-    } else if (Number(clockReadingValue) < Number(machine.clockValue)) {
-      alert(`Valor de leitura do relógio inválida, revise o campo!`);
-    } else if (Number(leavingGiftsQuantity) > machine.giftsQuantity) {
-    } else {
-      const reading: Reading = { 
-        idReading: lastIdReading + 1, 
-        typeReading: 0,
-        idMachine: machine.idMachine,
-        date: date,
-        previousClockValue: machine.clockValue,
-        clockReadingValue: Number(clockReadingValue),
-        cashValue: ((Number(clockReadingValue) - machine.clockValue) * 2),
-        leavingGiftsQuantity: Number(leavingGiftsQuantity)
+          const readingsSorted = _sortReadings(swapReadings);
+          setReadings(readingsSorted);
+          alert('Registro de leitura realizado com sucesso!');
+        }
+        setDate('');
+        setClockReadingValue('');
+        setLeavingGiftsQuantity('');
       }
-      _updateMachineValues(reading.clockReadingValue, reading.cashValue, reading.leavingGiftsQuantity, 0, machine);
-      alert('Registro de leitura realizado com sucesso!');
-      _saveData(reading);
-      setDate('');
-      setClockReadingValue('');
-      setLeavingGiftsQuantity('');
     }
   }
 
-  function addWithdrawCash(lastIdReading: number) {
-    if (!dateWithdrawCash || !cashValue) {
+  function handleRemoveCash() {
+    if (!moment(dateWithdrawCash).isValid() || !cashValue) {
       alert(`Registro de retirada inválido, revise os campos!`);
     } else {
-      const machine = _getMachine();
-      // const dateRaw = dateWithdrawCash.split('/');
-      // const date = new Date(`${dateRaw[1]}-${dateRaw[0]}-${dateRaw[2]}`);
-      const reading: Reading = { 
-        idReading: lastIdReading + 1, 
-        typeReading: 1,
-        idMachine: machine.idMachine,
-        date: dateWithdrawCash,
+      let reading: Reading = {
+        id: 0, // index is unusable
+        typeReading: true,
+        dateReading: dateWithdrawCash,
         previousClockValue: 0,
         clockReadingValue: 0,
         cashValue: Number(cashValue),
-        leavingGiftsQuantity: 0
+        leavingGiftsQuantity: 0,
+        idMachine: routeParams.id
       }
-      _updateMachineValues(reading.clockReadingValue, reading.cashValue, reading.leavingGiftsQuantity, 1, machine);
-      alert('Registro de leitura realizado com sucesso!');
-      _saveData(reading);
+      if (reading && reading.clockReadingValue === 0 && reading.leavingGiftsQuantity === 0) {
+        _updateMachineValues(reading.clockReadingValue, reading.cashValue, reading.leavingGiftsQuantity, true);
+        const swapReadings = readings;
+        reading.id = insertedId;
+        swapReadings.push(reading);
+        _saveData(reading);
+        
+        const readingsSorted = _sortReadings(swapReadings);
+        setReadings(readingsSorted);
+        alert('Registro de leitura realizado com sucesso!');
+      }
       setDateWithdrawCash('');
       setCashValue('');
     }
   }
 
-  function _updateMachineValues(clockValue: number, cashValue: number, leavingGiftsQuantity: number, typeReading: number, machine: Machine) {
-    let mach = machine;
-    mach.giftsQuantity -= leavingGiftsQuantity;
-    if (typeReading == 0) {
-      mach.clockValue = clockValue;
-      mach.cashValue += cashValue;
-    } else {
-      mach.cashValue -= cashValue;
+  async function _updateMachineValues(clockValue: number, cashValue: number, leavingGiftsQuantity: number, typeReading: boolean) {
+    if (machine) {
+      machine.giftsQuantity -= leavingGiftsQuantity;
+      if (typeReading) {
+        machine.cashValue -= cashValue;
+      } else {
+        machine.clockValue = clockValue;
+        machine.cashValue += cashValue;
+      }
+      try {
+        await MachineService.updateById(machine);
+      } catch (err) {
+        console.log(`Failed to update machines data!\nDetails: ${err}`);
+      }
     }
-
-    const machinesSwap = machines;
-    machinesSwap.splice((mach.idMachine - 1), 1, machine);
-    setMachines(machinesSwap);
-    console.log(`subsSave: ${JSON.stringify(machines)}`);
-    storage.save(STRGK_MACHINES, machines)
-    .catch(err => console.log(`Failed to update machines data!\nDetails: ${err}`));
   }
 
-  function _getMachine() {
-    const index = machines.findIndex(machine => machine.idMachine === Number(routeParams.idMachine));
-    const machine: Machine = machines[index];
-    return machine;
+  function _getMachine(id: number) {
+    MachineService.findById(id)
+      .then(data => {
+        if (data) {
+          console.log(`Load values of Machine ${data.id} in page: Reading.tsx`);
+          setMachine(data);
+        }
+      })
+    .catch(err => console.log(`Error to get machine id ${id} intro SQLite!\nDetails: ${err}`));
   }
 
   function _sortReadings(data: Reading[]) {
     if (data.length > 0) {
       const reads = data;
-      reads.sort((a: Reading, b: Reading) => { return (b.idReading - a.idReading) });
+      reads.sort((a: Reading, b: Reading) => { return ((b.id as number) - (a.id as number)) });
       return reads;
     }
     return data;
   }
 
   function _saveData(data: Reading) {
-    const reads = readings;
-    reads.push(data);
-    const tmpReadings = _sortReadings(reads);
-    setReadings(tmpReadings);
-    storage.push(STRGK_READINGS, data)
-    .catch(err => console.log(`Failed to save readings data!\nDetails: ${err}`));
-  }
-
-  function handleAddReading() {
-    () => _loadData();
-    if (readings.length === 0) {
-      addReading(0);
-    } else {
-      const lastIdReading = readings[(readings.length - 1)].idReading;
-      addReading(lastIdReading);
-    }
-  }
-
-  function handleRemoveCash() {
-    () => _loadData();
-    if (readings.length === 0) {
-      addWithdrawCash(0);
-    } else {
-      const lastIdReading = readings[(readings.length - 1)].idReading;
-      addWithdrawCash(lastIdReading);
-    }
+    ReadingService.addData(data)
+      .then(id => {
+        if (id) {
+          setInsertedId(id as number);
+        }
+      })
+    .catch(err => console.log(`Failed to save new reading data!\nDetails: ${err}`));
   }
 
   function _loadData() {
-    storage.get(STRGK_MACHINES)
+    ReadingService.findAll()
       .then(data => {
-          setMachines(data);
-          console.log(`loadData_Machines(Readings)`);
-          storage.get(STRGK_READINGS)
-            .then(data => {
-              if (!data) {
-                console.log(`There are no persistent Readings data in AsyncStorage!`);
-              } else {
-                const readings = _sortReadings(data);
-                setReadings(readings);
-                console.log(`loadData(Readings)!`);
-              }
-            })
-          .catch(err => console.log(`Error to restore readings from AsyncStorage.\n${err}`));
+        if (!data || data.length === 0) {
+          console.log(`There are no persistent Readings data in SQLite!`);
+        } else {
+          console.log(`Load values in page: Reading.tsx`);
+          const contracts = _sortReadings(data);
+          setReadings(contracts);
+        }
       })
-    .catch(err => console.log(`Error to restore machines from AsyncStorage.\n${err}`));
+    .catch((err: any) => console.log(`Error to restore Readings from SQLite.\n${err}`));
   }
 
   useEffect(() => {
     _loadData();
+    _getMachine(routeParams.id);
   }, [isFocus]);
 
   const renderItem = ({ item } : { item: Reading }) => {
     return (
-      <View style={item.typeReading === 0 
-        ? [styles.item, { backgroundColor: '#04D361' }]
-        : [styles.item, { backgroundColor: '#E33D3D' }]
+      <View style={item.typeReading  
+        ? [styles.item, { backgroundColor: '#E33D3D' }]
+        : [styles.item, { backgroundColor: '#04D361' }]
       }>
-        <Text style={styles.itemText}>{`Data: ${item.date}`}</Text>
+        <Text style={styles.itemText}>{`Data: ${item.dateReading}`}</Text>
         { item.previousClockValue 
           ? <Text style={styles.itemText}>{`Leitura anterior: ${item.previousClockValue}`}</Text>
           : null
@@ -213,9 +187,10 @@ const Readings = () => {
     );
   };
 
+  // const _keyExtractor = (item: Reading) => String(item.id);
+
   return (
     <>
-      {/* {storage.delete(STRGK_READINGS)} */}
       <PageHeader title="Leituras" defaultBack={true}/>
       
       <View style={styles.container}>
@@ -242,7 +217,7 @@ const Readings = () => {
                 includeRawValueInChangeText={true}
                 placeholder='1200'
                 value={clockReadingValue}
-                onChangeText={(_, rawValue) => setClockReadingValue(rawValue)}
+                onChangeText={(_, rawValue) => setClockReadingValue(String(rawValue))}
                 keyboardType='number-pad'
               />
 
@@ -252,7 +227,7 @@ const Readings = () => {
                 includeRawValueInChangeText={true}
                 placeholder='12'
                 value={leavingGiftsQuantity}
-                onChangeText={(_, rawValue) => setLeavingGiftsQuantity(rawValue)}
+                onChangeText={(_, rawValue) => setLeavingGiftsQuantity(String(rawValue))}
                 keyboardType='number-pad'
               />
             </View>
@@ -314,12 +289,13 @@ const Readings = () => {
           </View>
         </TouchableWithoutFeedback>
 
-        <View style={styles.listItens}>
+        <View style={styles.listItems}>
           <FlatList
             data={readings}
             extraData={readings}
             renderItem={renderItem}
-            keyExtractor={(item) => item.idReading.toString()}
+            keyExtractor={(item: Reading) => item.id.toString()}
+            // keyExtractor={_keyExtractor}
             refreshing={false}
             onRefresh={_loadData}
           />
@@ -382,7 +358,7 @@ const styles = StyleSheet.create({
     fontSize: hp('4.2%'),
     color: '#fff'
   },
-  listItens: {
+  listItems: {
     flex: 1,
     width: wp('90%'),
     alignSelf: 'center',
