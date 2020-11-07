@@ -5,24 +5,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
 import PageHeader from '../../components/PageHeader';
-
-interface Contract {
-  idContract: number,
-  isActive: boolean,
-  typeContract: boolean,
-  dateSign: string,
-  idMachine: number,
-  placeName: string,
-  address: string,
-  city: string,
-  cep: string,
-  locatorName: string,
-  cpf: string,
-  cellphone: string,
-  percentage: string,
-  rentValue: number,
-  signatureB64: string,
-}
+import { Contract } from '../../services/contract.service';
 
 interface Params {
   contract: Contract
@@ -37,7 +20,7 @@ const DetailsContract = () => {
       <PageHeader title='Detalhes do Contrato' defaultBack={false} />
       <ScrollView style={styles.container}>
         <View style={styles.details}>
-          <Text style={styles.detailsText}>{`Número de Contrato: ${contract.idContract}`}</Text>
+          <Text style={styles.detailsText}>{`Número de Contrato: ${contract.id}`}</Text>
           <Text style={styles.detailsText}>{`Ativo? ${contract.isActive ? `Sim` : `Não`}`}</Text>
           <Text style={styles.detailsText}>{`Tipo de Contrato: ${contract.typeContract ? `Aluguel` : `Percentual`}`}</Text>
           <Text style={styles.detailsText}>{`Data de Assinatura: ${contract.dateSign}`}</Text>

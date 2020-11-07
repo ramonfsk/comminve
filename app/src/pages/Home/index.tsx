@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text ,Image, FlatList } from 'react-native';
-import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { RectButton } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
-import storage from '../../database/offline/index.js';
+import MachineService, { Machine } from '../../services/machine.service';
 
 import logo from '../../assets/imgs/logo6.png';
 
-const STRGK_MACHINES = '@comminve#machines';
-
-interface Machine {
-  idMachine: number,
-  clockValue: number,
-  cashValue: number,
-  giftsQuantity: number,
-  maxGiftsQuantity: number
-}
+import { DatabaseConnection } from '../../database/database-connection';
+const db = DatabaseConnection.getConnection();
 
 const Home = () => {
   // machines
@@ -30,17 +23,6 @@ const Home = () => {
   const isFocused = useIsFocused();
   // navigation
   const navigation = useNavigation();
-  // check params
-  const route = useRoute();
-  const routeParams = route.params as Machine;
-  if (typeof(routeParams) !== 'undefined') {
-    const index = machines.findIndex(machine => machine.idMachine === routeParams.idMachine)
-    if (index === -1) {
-        const machinesSwap = machines;
-        machinesSwap.push(routeParams);
-        setMachines(machinesSwap);
-    }
-  }
 
   function handleNavigateToMachineDetailsPage(machine: Machine) {
     navigation.navigate('MachineTabs', {
@@ -66,35 +48,31 @@ const Home = () => {
   }
 
   function _loadData() {
-    storage.get(STRGK_MACHINES)
-      .then((data: Machine[]) => {
-        if (!data) {
-          console.log(`There are no persistent Machines data in AsyncStorage!`);
+    MachineService.findAll()
+      .then(data => {
+        if (!data || data.length === 0) {
+          console.log(`There are no persistent Machines data in SQLite!`);
         } else {
-          console.log(`loadData(Home)`);
+          console.log(`Load values in page: Home.tsx`);
+          _calcCash(data);
           const machines = _sortMachines(data);
           setMachines(machines);
-          _calcCash(data);
         }
       })
-    .catch((err: any) => console.log(`Error to restore machines from AsyncStorage.\n${err}`));
+    .catch(err => console.log(`Error to restore Machines from SQLite.\n${err}`));
   }
 
   function _sortMachines(data: Machine[]) {
     if (data.length > 0) {
       const machs = data;
-      machs.sort((a: Machine, b: Machine) => { return (a.idMachine - b.idMachine) });
+      machs.sort((a: Machine, b: Machine) => { return (a.id - b.id) });
       return machs;
     }
     return data;
   }
 
-  // useEffect(() => {
-  //   _loadData();
-  // }, []);
-
   useEffect(() => {
-    navigation.addListener('focus', () => _loadData());
+    _loadData();
   }, [isFocused]);
   
   const renderItem = ({item} : { item: Machine }) => {
@@ -104,7 +82,7 @@ const Home = () => {
         style={styles.item}
       >
         <Text style={styles.itemText}>
-          {`Máquina ` + item.idMachine}
+          {`Máquina ` + item.id}
         </Text>
         <MaterialIcons style={styles.buttonIcon} name="navigate-next" />
       </RectButton>
@@ -113,7 +91,6 @@ const Home = () => {
 
   return (
     <View style={styles.container}>
-      {/* {storage.delete(STRGK_MACHINES)} */}
       <Image 
         style={styles.logo}
         source={logo} 
@@ -124,7 +101,7 @@ const Home = () => {
           data={machines}
           extraData={machines}
           renderItem={renderItem}
-          keyExtractor={(item: Machine) => item.idMachine.toString()}
+          keyExtractor={(item: Machine) => item.id.toString()}
           refreshing={false}
           onRefresh={_loadData}
         />

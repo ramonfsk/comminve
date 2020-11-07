@@ -5,37 +5,12 @@ import { RectButton } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
-import storage from '../../database/offline/index.js';
-
 import PageHeader from '../../components/PageHeader';
+import ContractService, { Contract } from '../../services/contract.service';
+import { Machine } from '../../services/machine.service';
 
 interface Params {
   machine: Machine;
-  contract: Contract;
-}
-
-interface Machine {
-  idMachine: number,
-  clockValue: number,
-  cashValue: number,
-  giftsQuantity: number,
-  maxGiftsQuantity: number
-}
-
-interface Contract {
-  idContract: number,
-  isActive: boolean,
-  typeContract: boolean,
-  dateSign: string,
-  idMachine: number,
-  placeName: string,
-  address: string,
-  cep: string,
-  locatorName: string,
-  cpf: string,
-  signatureB64: string,
-  percentage: number,
-  rentValue: number,
 }
 
 const Contracts = () => {
@@ -46,17 +21,9 @@ const Contracts = () => {
   // route params
   const route = useRoute();
   const routeParams = route.params as Params;
-  if (typeof(routeParams.contract) !== 'undefined') {
-    const index = contracts.findIndex(contract => contract.idContract === routeParams.contract.idContract)
-    if (index === -1) {
-        const contractsSwap = contracts;
-        contractsSwap.push(routeParams.contract);
-        setContracts(contractsSwap);
-        // _loadData();
-    }
-  }
 
-  const STRGK_CONTRACTS = `@comminve#machine${routeParams.machine.idMachine}_contracts`;
+  const isFocused = useIsFocused();
+
 
   function handleNavigateToContractDetailsPage(contract: Contract) {
     navigation.navigate('DetailsContract', { 
@@ -71,29 +38,29 @@ const Contracts = () => {
   function _sortContracts(data: Contract[]) {
     if (data.length > 0) {
       const cntrts = data;
-      cntrts.sort((a: Contract, b: Contract) => { return (b.idContract - a.idContract ) });
+      cntrts.sort((a: Contract, b: Contract) => { return ((b.id as number) - (a.id as number)) });
       return cntrts;
     }
     return data;
   }
 
   function _loadData() {
-    storage.get(STRGK_CONTRACTS)
-    .then((data: Contract[]) => {
-      if (!data) {
-        console.log(`There are no persistent Contracts data in AsyncStorage!`);
-      } else {
-        const machines = _sortContracts(data);
-        setContracts(machines);
-        console.log(`loadData(Contract)`);
-      }
-    })
-  .catch((err: Error) => console.log(`Error to restore contracts from AsyncStorage.\n${err}`));
+    ContractService.findAll()
+      .then(data => {
+        if (!data || data.length === 0) {
+          console.log(`There are no persistent Contracts data in SQLite!`);
+        } else {
+          console.log(`Load values in page: Contracts.tsx`);
+          const contracts = _sortContracts(data);
+          setContracts(contracts);
+        }
+      })
+    .catch((err: any) => console.log(`Error to restore Contracts from SQLite.\n${err}`));
   }
 
   useEffect(() => {
     _loadData();
-  }, []);
+  }, [isFocused]);
   
   const renderItem = ({ item } : {item: Contract}) => {
     return (
@@ -102,16 +69,17 @@ const Contracts = () => {
         style={[styles.item, item.isActive ? { backgroundColor: '#04D361' } : { backgroundColor: '#8257e5' } ]}
       >
         <Text style={styles.itemText}>
-          {`Contrato ${item.idContract} | ${item.locatorName}`}
+          {`Contrato ${item.id} | ${item.locatorName}`}
         </Text>
         <MaterialIcons style={styles.buttonIcon} name="navigate-next" />
       </RectButton>
     );
   };
 
+  // const _keyExtractor = (item: Contract) => String(item.id);
+
   return (
     <>
-      {/* {storage.delete(STRGK_CONTRACTS)} */}
       <PageHeader title="Contratos" defaultBack={true} />
 
       <View style={styles.container}>
@@ -122,7 +90,8 @@ const Contracts = () => {
             data={contracts}
             extraData={contracts}
             renderItem={renderItem}
-            keyExtractor={(item: Contract) => item.idContract.toString()}
+            keyExtractor={(item: Contract) => item.id.toString()}
+            // keyExtractor={_keyExtractor}
             refreshing={false}
             onRefresh={_loadData}
           />
