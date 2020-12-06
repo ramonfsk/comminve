@@ -45,8 +45,8 @@ class ContractService {
               idMachine
             ) 
             values (
-              ${contract.isActive}, 
-              ${contract.typeContract}, 
+              '${contract.isActive}', 
+              '${contract.typeContract}', 
               '${contract.dateSign}', 
               '${contract.placeName}', 
               '${contract.address}', 
@@ -89,8 +89,8 @@ class ContractService {
           tx.executeSql(
             `update ${table} 
             set 
-              isActive = ${contract.isActive}, 
-              typeContract = ${contract.typeContract}, 
+              isActive = '${contract.isActive}', 
+              typeContract = '${contract.typeContract}', 
               dateSign = '${contract.dateSign}', 
               placeName = '${contract.placeName}', 
               address = '${contract.address}', 
@@ -129,7 +129,7 @@ class ContractService {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
-          `select * from ${table} where idMachine = ${idMachine} and isActive = ${true}`,
+          `select * from ${table} where idMachine = ${idMachine} and isActive = '${true}'`,
           [],
           (_, { rows }) => resolve(rows.item(0))
         ), (sqlError: SQLError) => reject(sqlError)
@@ -145,6 +145,25 @@ class ContractService {
           `select * from ${table} where idMachine = ${idMachine} order by id desc limit 1`,
           [],
           (_, { rows }) => resolve(rows.item(0))
+        ), (sqlError: SQLError) => reject(sqlError)
+        }, (txError) => reject(txError)
+      );
+    });
+  }
+
+  static findAllByMachine(id: number): Promise<Contract[]> {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          `select * from ${table} where idMachine = '${id}'`,
+          [],
+          (_, { rows }) => {
+            const contracts: Contract[] = [];
+            for (let i = 0; i < rows.length; i++) {
+              contracts.push(rows.item(i));
+            }
+            resolve(contracts);
+          }
         ), (sqlError: SQLError) => reject(sqlError)
         }, (txError) => reject(txError)
       );

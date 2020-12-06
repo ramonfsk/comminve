@@ -6,7 +6,8 @@ import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-nativ
 
 import MachineDetails from '../pages/MachineDetails';
 import Contracts from '../pages/Contracts';
-import CashWithdrawal from '../pages/Readings';
+import Readings from '../pages/Readings';
+import Withdraws from '../pages/Withdraws';
 
 interface Params {
   machine: object;
@@ -71,13 +72,26 @@ const MachineTabs = () => {
             );
           }
         }}
-        initialParams={routeParams}
+        initialParams={routeParams.machine}
       />
       <Screen 
         name="Readings" 
-        component={CashWithdrawal} 
+        component={Readings} 
         options={{
           tabBarLabel: 'Leituras',
+          tabBarIcon: ({ color, size }) => {
+            return (
+              <MaterialIcons name="timer" size={size} color={color} />
+            );
+          }
+        }}
+        initialParams={routeParams.machine}
+      />
+      <Screen 
+        name="Withdraw" 
+        component={Withdraws} 
+        options={{
+          tabBarLabel: 'Retiradas',
           tabBarIcon: ({ color, size }) => {
             return (
               <MaterialIcons name="attach-money" size={size} color={color} />

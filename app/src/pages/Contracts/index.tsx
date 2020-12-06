@@ -20,10 +20,9 @@ const Contracts = () => {
   const navigation = useNavigation();
   // route params
   const route = useRoute();
-  const routeParams = route.params as Params;
+  const routeParams = route.params as Machine;
 
   const isFocused = useIsFocused();
-
 
   function handleNavigateToContractDetailsPage(contract: Contract) {
     navigation.navigate('DetailsContract', { 
@@ -32,7 +31,7 @@ const Contracts = () => {
   }
 
   function handleNavigateToAddNewContractPage() {
-    navigation.navigate('FormAddContract', { machine: routeParams.machine });
+    navigation.navigate('FormAddContract', { machine: routeParams });
   }
 
   function _sortContracts(data: Contract[]) {
@@ -45,7 +44,7 @@ const Contracts = () => {
   }
 
   function _loadData() {
-    ContractService.findAll()
+    ContractService.findAllByMachine(routeParams.id)
       .then(data => {
         if (!data || data.length === 0) {
           console.log(`There are no persistent Contracts data in SQLite!`);
