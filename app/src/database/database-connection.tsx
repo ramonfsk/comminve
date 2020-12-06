@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-const name = 'db_comminve';
+const name = 'db_comminve_v2';
 export const DatabaseConnection = {
-    getConnection: () => SQLite.openDatabase(name, "v1"),
+    getConnection: () => SQLite.openDatabase(name, 'v2'),
 };

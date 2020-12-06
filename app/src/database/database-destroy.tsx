@@ -11,8 +11,9 @@ class DatabaseDestroy {
 
   private DestroyDb() {
       const sql = [
-        `drop table if exists contract;`,
+        `drop table if exists withdraw;`,
         `drop table if exists reading;`,
+        `drop table if exists contract;`,
         `drop table if exists machine;`,
     ];
 

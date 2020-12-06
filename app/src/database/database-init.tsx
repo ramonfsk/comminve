@@ -43,12 +43,19 @@ class DatabaseInit {
 
         `create table if not exists reading (
           id integer primary key autoincrement,
-          typeReading boolean,
           dateReading text,
           previousClockValue int,
           clockReadingValue int,
           cashValue double,
           leavingGiftsQuantity int,
+          idMachine int,
+          foreign key (idMachine) references machine (id)
+        );`,
+
+        `create table if not exists withdraw (
+          id integer primary key autoincrement,
+          dateReading text,
+          cashValue double,
           idMachine int,
           foreign key (idMachine) references machine (id)
         );`

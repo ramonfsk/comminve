@@ -7,6 +7,7 @@ import FormAddMachine from './pages/FormAddMachine';
 import MachineDetails from './pages/MachineDetails';
 import Contracts from './pages/Contracts';
 import Readings from './pages/Readings';
+import Withdraws from './pages/Withdraws';
 
 const { Navigator, Screen } = createStackNavigator();
 
@@ -19,6 +20,7 @@ const Routes = () => {
         <Screen name="MachineDetails" component={MachineDetails} />
         <Screen name="Contracts" component={Contracts} />
         <Screen name="Readings" component={Readings} />
+        <Screen name="Withdraws" component={Withdraws} />
       </Navigator>
     </NavigationContainer>
   );

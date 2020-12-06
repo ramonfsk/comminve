@@ -36,7 +36,7 @@ const FormAddContract = () => {
   const navigation = useNavigation();
 
   const route = useRoute();
-  const routeParams = route.params as Params;
+  const routeParams = route.params as Machine;
 
   const _handleSignature = (signature: string) => {
     //console.log(signature);
@@ -64,7 +64,7 @@ const FormAddContract = () => {
         percentage: percentage.includes('%') ? Number(percentage.replace('%', '')) : Number(percentage),
         rentValue: Number(rentValue),
         signatureB64: signatureB64,
-        idMachine: routeParams.machine.id
+        idMachine: routeParams.id
       };
       _disableLastContract();
       _saveData(contract)
@@ -75,7 +75,7 @@ const FormAddContract = () => {
 
   async function _disableLastContract() {
     try {
-      const lastContract: Contract = await ContractService.findLastContractByMachine(routeParams.machine.id);
+      const lastContract: Contract = await ContractService.findLastContractByMachine(routeParams.id);
       if (lastContract) {
         const { id, typeContract, dateSign, placeName, address, city, cep, locatorName, cpf, cellphone, percentage, rentValue, signatureB64, idMachine } = lastContract;
         await ContractService.updateById({ id, isActive: false, typeContract, dateSign, placeName, address, city, cep, locatorName, cpf, cellphone, percentage, rentValue, signatureB64, idMachine });

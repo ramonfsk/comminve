@@ -41,7 +41,6 @@ const Readings = () => {
       } else {
         let reading: Reading = {
           id: 0, // index is unusable
-          typeReading: false,
           dateReading: date,
           previousClockValue: machine.clockValue,
           clockReadingValue: Number(clockReadingValue),
@@ -64,36 +63,6 @@ const Readings = () => {
         setClockReadingValue('');
         setLeavingGiftsQuantity('');
       }
-    }
-  }
-
-  function handleRemoveCash() {
-    if (!moment(dateWithdrawCash).isValid() || !cashValue) {
-      alert(`Registro de retirada inválido, revise os campos!`);
-    } else {
-      let reading: Reading = {
-        id: 0, // index is unusable
-        typeReading: true,
-        dateReading: dateWithdrawCash,
-        previousClockValue: 0,
-        clockReadingValue: 0,
-        cashValue: Number(cashValue),
-        leavingGiftsQuantity: 0,
-        idMachine: routeParams.id
-      }
-      if (reading && reading.clockReadingValue === 0 && reading.leavingGiftsQuantity === 0) {
-        _updateMachineValues(reading.clockReadingValue, reading.cashValue, reading.leavingGiftsQuantity, true);
-        const swapReadings = readings;
-        reading.id = insertedId;
-        swapReadings.push(reading);
-        _saveData(reading);
-        
-        const readingsSorted = _sortReadings(swapReadings);
-        setReadings(readingsSorted);
-        alert('Registro de leitura realizado com sucesso!');
-      }
-      setDateWithdrawCash('');
-      setCashValue('');
     }
   }
 
@@ -145,7 +114,7 @@ const Readings = () => {
   }
 
   function _loadData() {
-    ReadingService.findAll()
+    ReadingService.findAllByMachine(routeParams.id)
       .then(data => {
         if (!data || data.length === 0) {
           console.log(`There are no persistent Readings data in SQLite!`);
@@ -165,24 +134,12 @@ const Readings = () => {
 
   const renderItem = ({ item } : { item: Reading }) => {
     return (
-      <View style={item.typeReading  
-        ? [styles.item, { backgroundColor: '#E33D3D' }]
-        : [styles.item, { backgroundColor: '#04D361' }]
-      }>
+      <View style={styles.item}>
         <Text style={styles.itemText}>{`Data: ${item.dateReading}`}</Text>
-        { item.previousClockValue 
-          ? <Text style={styles.itemText}>{`Leitura anterior: ${item.previousClockValue}`}</Text>
-          : null
-        }
-        { item.clockReadingValue 
-          ? <Text style={styles.itemText}>{`Relógio: ${item.clockReadingValue}`}</Text>
-          : null
-        }
+        <Text style={styles.itemText}>{`Leitura anterior: ${item.previousClockValue}`}</Text>  
+        <Text style={styles.itemText}>{`Relógio: ${item.clockReadingValue}`}</Text>
         <Text style={styles.itemText}>{`Valor: R$ ${item.cashValue}`}</Text>
-        { item.leavingGiftsQuantity 
-          ? <Text style={styles.itemText}>{`Saída de Ursos: ${item.leavingGiftsQuantity}`}</Text>
-          : null
-        }
+        <Text style={styles.itemText}>{`Saída de Ursos: ${item.leavingGiftsQuantity}`}</Text>
       </View>
     );
   };
@@ -242,48 +199,6 @@ const Readings = () => {
               <MaterialIcons 
                 style={styles.buttonIcon} 
                 name={'timer'} 
-              />
-            </RectButton>
-
-            <View style={styles.inputGroup}>
-              <TextInputMask
-                style={styles.input}
-                type={'datetime'}
-                placeholder='17/09/1995'
-                options={{
-                  format: 'DD/MM/YYYY',
-                }}
-                keyboardType='number-pad'
-                value={dateWithdrawCash}
-                onChangeText={(value) => setDateWithdrawCash(value)}
-              />
-              <TextInputMask
-                  style={styles.input}
-                  type={'money'}
-                  includeRawValueInChangeText={true}
-                  options={{
-                    // mask: 'R$ 999,99',
-                    precision: 0,
-                    separator: ',',
-                    delimiter: '.',
-                    unit: 'R$ ',
-                  }}
-                  placeholder='R$ 999'
-                  value={String(cashValue)}
-                  onChangeText={(_, rawValue) => setCashValue(String(rawValue))}
-                  keyboardType='number-pad'
-                />
-              </View>
-            <RectButton
-              onPress={handleRemoveCash}
-              style={[styles.button, { backgroundColor: '#E33D3D' }]}
-            >
-              <Text style={styles.buttonText}>
-                Retirada
-              </Text>
-              <MaterialIcons 
-                style={styles.buttonIcon} 
-                name={'money-off'} 
               />
             </RectButton>
           </View>
@@ -380,6 +295,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#f1f1f1',
     borderRadius: 8,
+    backgroundColor: '#8257e5',
   },
   itemText:{
     //fontFamily: 'Archivo_400Regular',

@@ -1,21 +1,18 @@
 import { DatabaseConnection } from '../database/database-connection';
 import { SQLError } from 'expo-sqlite';
 
-export interface Reading {
+export interface Withdraw {
   id: number,
   dateReading: string,
-  previousClockValue: number,
-  clockReadingValue: number,
   cashValue: number,
-  leavingGiftsQuantity: number
   idMachine: number,
 }
 
-const table = 'reading';
+const table = 'withdraw';
 const db = DatabaseConnection.getConnection();
 
-class ReadingService {
-  static addData(reading: Reading) {
+class WithdrawService {
+  static addData(reading: Withdraw) {
     return new Promise((resolve, reject) => {
       db.transaction(
         tx => {
@@ -23,18 +20,12 @@ class ReadingService {
             `insert into ${table} 
             (
               dateReading,
-              previousClockValue,
-              clockReadingValue,
               cashValue,
-              leavingGiftsQuantity,
               idMachine
             ) 
             values (
               '${reading.dateReading}', 
-              ${reading.previousClockValue},
-              ${reading.clockReadingValue},
               ${reading.cashValue},
-              ${reading.leavingGiftsQuantity},
               ${reading.idMachine}
             )`,
             [],
@@ -59,7 +50,7 @@ class ReadingService {
   }
 
 
-  static updateById(reading: Reading) {
+  static updateById(reading: Withdraw) {
     return new Promise((resolve, reject) => {
       db.transaction(
         tx => {
@@ -67,10 +58,7 @@ class ReadingService {
             `update ${table} 
             set 
               dateReading = '${reading.dateReading}', 
-              previousClockValue = ${reading.previousClockValue},
-              clockReadingValue = ${reading.clockReadingValue},
               cashValue = ${reading.cashValue},
-              leavingGiftsQuantity = ${reading.leavingGiftsQuantity}
               idMachine = ${reading.idMachine}
             where id = ${reading.id}`,
             [],
@@ -81,7 +69,7 @@ class ReadingService {
     })
   }
 
-  static findById(id: number): Promise<Reading>  {
+  static findById(id: number): Promise<Withdraw>  {
       return new Promise((resolve, reject) => {
         db.transaction(tx => {
           tx.executeSql(
@@ -94,14 +82,14 @@ class ReadingService {
       });
   }
 
-  static findAllByMachine(id: number): Promise<Reading[]> {
+  static findAllByMachine(id: number): Promise<Withdraw[]> {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
           `select * from ${table} where idMachine = '${id}'`,
           [],
           (_, { rows }) => {
-            const readings: Reading[] = [];
+            const readings: Withdraw[] = [];
             for (let i = 0; i < rows.length; i++) {
               readings.push(rows.item(i));
             }
@@ -113,14 +101,14 @@ class ReadingService {
     });
   }
 
-  static findAll(): Promise<Reading[]> {
+  static findAll(): Promise<Withdraw[]> {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
           `select * from ${table}`,
           [],
           (_, { rows }) => {
-            const readings: Reading[] = [];
+            const readings: Withdraw[] = [];
             for (let i = 0; i < rows.length; i++) {
               readings.push(rows.item(i));
             }
@@ -133,4 +121,4 @@ class ReadingService {
   }
 }
 
-export default ReadingService;
+export default WithdrawService;

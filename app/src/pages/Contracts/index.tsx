@@ -9,10 +9,6 @@ import PageHeader from '../../components/PageHeader';
 import ContractService, { Contract } from '../../services/contract.service';
 import { Machine } from '../../services/machine.service';
 
-interface Params {
-  machine: Machine;
-}
-
 const Contracts = () => {
   // contracts
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -20,7 +16,7 @@ const Contracts = () => {
   const navigation = useNavigation();
   // route params
   const route = useRoute();
-  const routeParams = route.params as Params;
+  const routeParams = route.params as Machine;
 
   const isFocused = useIsFocused();
 
@@ -32,7 +28,7 @@ const Contracts = () => {
   }
 
   function handleNavigateToAddNewContractPage() {
-    navigation.navigate('FormAddContract', { machine: routeParams.machine });
+    navigation.navigate('FormAddContract', { machine: routeParams });
   }
 
   function _sortContracts(data: Contract[]) {
@@ -45,7 +41,7 @@ const Contracts = () => {
   }
 
   function _loadData() {
-    ContractService.findAll()
+    ContractService.findAllByMachine(routeParams.id)
       .then(data => {
         if (!data || data.length === 0) {
           console.log(`There are no persistent Contracts data in SQLite!`);
