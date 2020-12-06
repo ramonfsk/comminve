@@ -9,6 +9,10 @@ import PageHeader from '../../components/PageHeader';
 import ContractService, { Contract } from '../../services/contract.service';
 import { Machine } from '../../services/machine.service';
 
+interface Params {
+  machine: Machine;
+}
+
 const Contracts = () => {
   // contracts
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -19,7 +23,6 @@ const Contracts = () => {
   const routeParams = route.params as Machine;
 
   const isFocused = useIsFocused();
-
 
   function handleNavigateToContractDetailsPage(contract: Contract) {
     navigation.navigate('DetailsContract', { 
