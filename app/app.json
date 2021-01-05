@@ -2,7 +2,7 @@
   "expo": {
     "name": "comminve",
     "slug": "comminve",
-    "version": "1.3.3",
+    "version": "1.3.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -19,11 +19,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ramonfsk.comminve",
-      "buildNumber": "1.3.3"
+      "buildNumber": "1.3.5"
     },
     "android": {
       "package": "com.ramonfsk.comminve",
-      "versionCode": 8
+      "versionCode": 10
     }
   }
 }

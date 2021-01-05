@@ -24,8 +24,7 @@ class DatabaseInit {
 
         `create table if not exists contract (
           id integer primary key autoincrement,
-          isActive boolean,
-          typeContract boolean,
+          typeContract int,
           dateSign text,
           placeName text,
           address text,

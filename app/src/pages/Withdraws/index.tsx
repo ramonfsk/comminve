@@ -5,7 +5,6 @@ import { RectButton, TouchableWithoutFeedback } from 'react-native-gesture-handl
 import { MaterialIcons } from '@expo/vector-icons';
 import { TextInputMask } from 'react-native-masked-text';
 import moment from 'moment';
-import 'moment/locale/pt-br';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
 import PageHeader from '../../components/PageHeader';
@@ -33,7 +32,7 @@ const Withdraws = () => {
     } else {
       let withdraw: Withdraw = {
         id: 0, // index is unusable
-        dateReading: date,
+        dateReading: moment(date).locale('pt-br').format('L'),
         cashValue: Number(cashValue),
         idMachine: routeParams.id
       }
@@ -134,9 +133,9 @@ const Withdraws = () => {
             <TextInputMask
                 style={styles.input}
                 type={'datetime'}
-                placeholder='17/09/1995'
+                placeholder='12/31/2020'
                 options={{
-                  format: 'DD/MM/YYYY',
+                  format: 'MM/DD/YYYY',
                 }}
                 keyboardType='number-pad'
                 value={date}

@@ -28,7 +28,7 @@ const Contracts = () => {
   }
 
   function handleNavigateToAddNewContractPage() {
-    navigation.navigate('FormAddContract', { machine: routeParams });
+    navigation.navigate('FormAddContract', { idMachine: routeParams.id });
   }
 
   function _sortContracts(data: Contract[]) {
@@ -62,7 +62,7 @@ const Contracts = () => {
     return (
       <RectButton
         onPress={() => handleNavigateToContractDetailsPage(item)}
-        style={[styles.item, item.isActive ? { backgroundColor: '#04D361' } : { backgroundColor: '#8257e5' } ]}
+        style={styles.item}
       >
         <Text style={styles.itemText}>
           {`Contrato ${item.id} | ${item.locatorName}`}

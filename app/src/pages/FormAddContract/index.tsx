@@ -11,10 +11,8 @@ import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-nativ
 import PageHeader from '../../components/PageHeader';
 import Sign from '../../components/Signature/index.js';
 import ContractService, { Contract } from '../../services/contract.service';
-import { Machine } from '../../services/machine.service';
-
-interface Params {
-  machine: Machine;
+interface FormaAddContractParams {
+  idMachine: number;
 }
 
 const FormAddContract = () => {
@@ -36,7 +34,7 @@ const FormAddContract = () => {
   const navigation = useNavigation();
 
   const route = useRoute();
-  const routeParams = route.params as Machine;
+  const routeParams = route.params as FormaAddContractParams;
 
   const _handleSignature = (signature: string) => {
     //console.log(signature);
@@ -51,8 +49,7 @@ const FormAddContract = () => {
       
       const contract: Contract = {
         id: 0, // index is unusable
-        isActive: true,
-        typeContract: typeContract,
+        typeContract: typeContract ? 1 : 2,
         dateSign: currentDate,
         placeName: placeName,
         address: address,
@@ -64,24 +61,11 @@ const FormAddContract = () => {
         percentage: percentage.includes('%') ? Number(percentage.replace('%', '')) : Number(percentage),
         rentValue: Number(rentValue),
         signatureB64: signatureB64,
-        idMachine: routeParams.id
+        idMachine: routeParams.idMachine
       };
-      _disableLastContract();
       _saveData(contract)
       alert('Contrato assinado com sucesso!');
       navigation.goBack();
-    }
-  }
-
-  async function _disableLastContract() {
-    try {
-      const lastContract: Contract = await ContractService.findLastContractByMachine(routeParams.id);
-      if (lastContract) {
-        const { id, typeContract, dateSign, placeName, address, city, cep, locatorName, cpf, cellphone, percentage, rentValue, signatureB64, idMachine } = lastContract;
-        await ContractService.updateById({ id, isActive: false, typeContract, dateSign, placeName, address, city, cep, locatorName, cpf, cellphone, percentage, rentValue, signatureB64, idMachine });
-      }
-    } catch (err) {
-      console.log(`Failed to disable last contract!\nDetails: ${err}`);
     }
   }
 

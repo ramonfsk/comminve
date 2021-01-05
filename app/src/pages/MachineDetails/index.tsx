@@ -11,7 +11,7 @@ import MachineService, { Machine } from '../../services/machine.service';
 import ContractService, { Contract } from '../../services/contract.service';
 
 interface Allocation {
-  typeContract: boolean,
+  typeContract: number,
   value: number,
 }
 
@@ -59,7 +59,7 @@ const MachineDetails = () => {
 
   function _calcAllocationValue() {
     if (allocation) {
-      if (!allocation.typeContract) {
+      if (allocation.typeContract === 2) {
         if (machine){
           setValueAllocation((allocation.value / 100) * machine.cashValue);
         }
@@ -69,15 +69,15 @@ const MachineDetails = () => {
     }
   }
 
-  async function _getContractActiveMachine() {
+  async function _getLastContractMachine() {
     if (machine) {
-      const contract: Contract = await ContractService.findActiveContractByMachine(machine.id);
+      const contract: Contract = await ContractService.findLastContractByMachine(machine.id);
       if (!contract) {
         console.log(`There are no persistent Contracts data in SQLite!`);
       } else {
         const allocation: Allocation = {
           typeContract: contract.typeContract,
-          value: contract.typeContract ? contract.rentValue : contract.percentage
+          value: contract.typeContract === 1 ? contract.rentValue : contract.percentage
         };
         setAllocation(allocation);
       }
@@ -89,7 +89,7 @@ const MachineDetails = () => {
     if (machine) {
       setMachine(machine);
       setCurrentGiftsQuantity(machine.giftsQuantity);
-      _getContractActiveMachine();
+      _getLastContractMachine();
       _calcAllocationValue();
       console.log(`Load values in page: MachineDetails.tsx`);
     }
