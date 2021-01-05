@@ -3,8 +3,7 @@ import { SQLError } from 'expo-sqlite';
 
 export interface Contract {
   id: number,
-  isActive: boolean,
-  typeContract: boolean,
+  typeContract: number,
   dateSign: string,
   placeName: string,
   address: string,
@@ -29,8 +28,7 @@ class ContractService {
         tx => {
           tx.executeSql(
             `insert into ${table} 
-            (isActive, 
-              typeContract, 
+            (typeContract, 
               dateSign, 
               placeName, 
               address, 
@@ -45,8 +43,7 @@ class ContractService {
               idMachine
             ) 
             values (
-              '${contract.isActive}', 
-              '${contract.typeContract}', 
+              ${contract.typeContract}, 
               '${contract.dateSign}', 
               '${contract.placeName}', 
               '${contract.address}', 
@@ -89,8 +86,7 @@ class ContractService {
           tx.executeSql(
             `update ${table} 
             set 
-              isActive = '${contract.isActive}', 
-              typeContract = '${contract.typeContract}', 
+              typeContract = ${contract.typeContract}, 
               dateSign = '${contract.dateSign}', 
               placeName = '${contract.placeName}', 
               address = '${contract.address}', 
@@ -125,19 +121,6 @@ class ContractService {
     });
   }
 
-  static findActiveContractByMachine(idMachine: number): Promise<Contract> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `select * from ${table} where idMachine = ${idMachine} and isActive = '${true}'`,
-          [],
-          (_, { rows }) => resolve(rows.item(0))
-        ), (sqlError: SQLError) => reject(sqlError)
-        }, (txError) => reject(txError)
-      );
-    });
-  }
-
   static findLastContractByMachine(idMachine: number): Promise<Contract> {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
@@ -155,7 +138,7 @@ class ContractService {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
-          `select * from ${table} where idMachine = '${id}'`,
+          `select * from ${table} where idMachine = ${id}`,
           [],
           (_, { rows }) => {
             const contracts: Contract[] = [];

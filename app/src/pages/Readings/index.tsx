@@ -16,9 +16,7 @@ const Readings = () => {
   // Reading
   const [insertedId, setInsertedId] = useState(0);
   const [date, setDate] = useState('');
-  const [dateWithdrawCash, setDateWithdrawCash] = useState('');
   const [clockReadingValue, setClockReadingValue] = useState('');
-  const [cashValue, setCashValue] = useState('');
   const [leavingGiftsQuantity, setLeavingGiftsQuantity] = useState('');
   // readings
   const [readings, setReadings] = useState<Reading[]>([]);
@@ -41,7 +39,7 @@ const Readings = () => {
       } else {
         let reading: Reading = {
           id: 0, // index is unusable
-          dateReading: date,
+          dateReading: moment(date).locale('pt-br').format('L'),
           previousClockValue: machine.clockValue,
           clockReadingValue: Number(clockReadingValue),
           cashValue: ((Number(clockReadingValue) - machine.clockValue) * 2),
@@ -158,9 +156,9 @@ const Readings = () => {
               <TextInputMask
                 style={styles.input}
                 type={'datetime'}
-                placeholder='17/09/1995'
+                placeholder='12/31/2020'
                 options={{
-                  format: 'DD/MM/YYYY',
+                  format: 'MM/DD/YYYY',
                 }}
                 keyboardType='number-pad'
                 value={date}

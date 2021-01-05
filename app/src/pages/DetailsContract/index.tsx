@@ -21,7 +21,6 @@ const DetailsContract = () => {
       <ScrollView style={styles.container}>
         <View style={styles.details}>
           <Text style={styles.detailsText}>{`Número de Contrato: ${contract.id}`}</Text>
-          <Text style={styles.detailsText}>{`Ativo? ${contract.isActive ? `Sim` : `Não`}`}</Text>
           <Text style={styles.detailsText}>{`Tipo de Contrato: ${contract.typeContract ? `Aluguel` : `Percentual`}`}</Text>
           <Text style={styles.detailsText}>{`Data de Assinatura: ${contract.dateSign}`}</Text>
           <Text style={styles.detailsText}>{`Número de Máquina: ${contract.idMachine}`}</Text>
@@ -32,10 +31,10 @@ const DetailsContract = () => {
           <Text style={styles.detailsText}>{`Nome do Locador: ${contract.locatorName}`}</Text>
           <Text style={styles.detailsText}>{`CPF: ${contract.cpf}`}</Text>
           <Text style={styles.detailsText}>{`Celular: ${contract.cellphone}`}</Text>
-          {contract.typeContract ? (
+          {contract.typeContract === 1 ? (
               <Text style={styles.detailsText}>{`Valor R$: ${contract.rentValue}`}</Text>
             ) : (
-              <Text style={styles.detailsText}>{`Percentual: ${contract.percentage}`}</Text>
+              <Text style={styles.detailsText}>{`Percentual: ${contract.percentage}%`}</Text>
             )
           }
         </View>

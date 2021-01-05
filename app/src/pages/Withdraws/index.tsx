@@ -33,7 +33,7 @@ const Withdraws = () => {
     } else {
       let withdraw: Withdraw = {
         id: 0, // index is unusable
-        dateReading: date,
+        dateReading: moment(date).locale('pt-br').format('L'),
         cashValue: Number(cashValue),
         idMachine: routeParams.id
       }
@@ -134,9 +134,9 @@ const Withdraws = () => {
             <TextInputMask
                 style={styles.input}
                 type={'datetime'}
-                placeholder='17/09/1995'
+                placeholder='12/31/2020'
                 options={{
-                  format: 'DD/MM/YYYY',
+                  format: 'MM/DD/YYYY',
                 }}
                 keyboardType='number-pad'
                 value={date}

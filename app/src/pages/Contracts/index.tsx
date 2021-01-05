@@ -9,10 +9,6 @@ import PageHeader from '../../components/PageHeader';
 import ContractService, { Contract } from '../../services/contract.service';
 import { Machine } from '../../services/machine.service';
 
-interface Params {
-  machine: Machine;
-}
-
 const Contracts = () => {
   // contracts
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -31,7 +27,7 @@ const Contracts = () => {
   }
 
   function handleNavigateToAddNewContractPage() {
-    navigation.navigate('FormAddContract', { machine: routeParams });
+    navigation.navigate('FormAddContract', { idMachine: routeParams.id });
   }
 
   function _sortContracts(data: Contract[]) {
@@ -65,7 +61,7 @@ const Contracts = () => {
     return (
       <RectButton
         onPress={() => handleNavigateToContractDetailsPage(item)}
-        style={[styles.item, item.isActive ? { backgroundColor: '#04D361' } : { backgroundColor: '#8257e5' } ]}
+        style={styles.item}
       >
         <Text style={styles.itemText}>
           {`Contrato ${item.id} | ${item.locatorName}`}
