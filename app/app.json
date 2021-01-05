@@ -24,6 +24,7 @@
     "android": {
       "package": "com.ramonfsk.comminve",
       "versionCode": 10
+    },
     }
   }
 }

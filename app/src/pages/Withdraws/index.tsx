@@ -5,6 +5,7 @@ import { RectButton, TouchableWithoutFeedback } from 'react-native-gesture-handl
 import { MaterialIcons } from '@expo/vector-icons';
 import { TextInputMask } from 'react-native-masked-text';
 import moment from 'moment';
+import 'moment/locale/pt-br';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
 import PageHeader from '../../components/PageHeader';

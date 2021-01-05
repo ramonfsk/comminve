@@ -23,7 +23,6 @@ const db = DatabaseConnection.getConnection();
 
 class ContractService {
   static addData(contract: Contract) {
-    const c = contract;
     return new Promise((resolve, reject) => {
       db.transaction(
         tx => {

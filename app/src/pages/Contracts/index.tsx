@@ -20,7 +20,6 @@ const Contracts = () => {
 
   const isFocused = useIsFocused();
 
-
   function handleNavigateToContractDetailsPage(contract: Contract) {
     navigation.navigate('DetailsContract', { 
       contract: contract,

@@ -11,6 +11,7 @@ import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-nativ
 import PageHeader from '../../components/PageHeader';
 import Sign from '../../components/Signature/index.js';
 import ContractService, { Contract } from '../../services/contract.service';
+
 interface FormaAddContractParams {
   idMachine: number;
 }
@@ -63,6 +64,7 @@ const FormAddContract = () => {
         signatureB64: signatureB64,
         idMachine: routeParams.idMachine
       };
+
       _saveData(contract)
       alert('Contrato assinado com sucesso!');
       navigation.goBack();
